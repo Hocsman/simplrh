@@ -1,0 +1,428 @@
+'use client'
+
+import Link from 'next/link'
+import { Header } from '../../components/marketing/Header'
+import { Footer } from '../../components/marketing/Footer'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card'
+import { Badge } from '../../components/ui/badge'
+import { Button } from '../../components/ui/button'
+import { Switch } from '../../components/ui/switch'
+import { 
+  Check, 
+  X, 
+  Star, 
+  Zap, 
+  Crown, 
+  ArrowRight,
+  Users,
+  CreditCard,
+  FileText,
+  HelpCircle
+} from 'lucide-react'
+import { useState } from 'react'
+
+const plans = [
+  {
+    name: 'Starter',
+    description: 'Parfait pour les freelances et petites entreprises',
+    icon: Star,
+    monthlyPrice: 29,
+    yearlyPrice: 290,
+    color: 'blue',
+    popular: false,
+    features: [
+      'Un module au choix',
+      'Jusqu\'à 5 utilisateurs',
+      'Stockage 10 GB',
+      '50 factures/mois',
+      'Support email',
+      'Rapports de base',
+      'API limitée (100 req/jour)'
+    ],
+    limitations: [
+      'Templates limités (5)',
+      'Exports mensuels limités (10)',
+      'Pas d\'intégrations tierces'
+    ]
+  },
+  {
+    name: 'Professional',
+    description: 'Idéal pour les entreprises en croissance',
+    icon: Zap,
+    monthlyPrice: 79,
+    yearlyPrice: 790,
+    color: 'green',
+    popular: true,
+    features: [
+      'Tous les modules inclus',
+      'Jusqu\'à 25 utilisateurs',
+      'Stockage 100 GB',
+      'Factures illimitées',
+      'Support prioritaire',
+      'Rapports avancés',
+      'API complète (10k req/jour)',
+      'Intégrations tierces',
+      'Templates premium',
+      'Exports illimités',
+      'Formations incluses',
+      'Sauvegarde quotidienne'
+    ]
+  },
+  {
+    name: 'Enterprise',
+    description: 'Pour les grandes organisations',
+    icon: Crown,
+    monthlyPrice: 199,
+    yearlyPrice: 1990,
+    color: 'purple',
+    popular: false,
+    features: [
+      'Tout de Professional',
+      'Utilisateurs illimités',
+      'Stockage illimité',
+      'Support dédié 24/7',
+      'Rapports personnalisés',
+      'API illimitée',
+      'Intégrations sur mesure',
+      'Formation sur site',
+      'Conformité avancée',
+      'SLA garantie 99.9%',
+      'Gestionnaire de compte',
+      'Infrastructure dédiée'
+    ]
+  }
+]
+
+const addons = [
+  {
+    name: 'Utilisateurs supplémentaires',
+    price: 8,
+    unit: 'par utilisateur/mois',
+    description: 'Ajoutez autant d\'utilisateurs que nécessaire'
+  },
+  {
+    name: 'Stockage supplémentaire',
+    price: 15,
+    unit: 'par 100 GB/mois',
+    description: 'Espace de stockage additionnel pour vos documents'
+  },
+  {
+    name: 'Formation personnalisée',
+    price: 299,
+    unit: 'par session',
+    description: 'Formation sur mesure pour vos équipes'
+  },
+  {
+    name: 'Support prioritaire 24/7',
+    price: 99,
+    unit: 'par mois',
+    description: 'Support téléphonique prioritaire'
+  }
+]
+
+const faqs = [
+  {
+    question: 'Puis-je changer de plan à tout moment ?',
+    answer: 'Oui, vous pouvez passer à un plan supérieur ou inférieur à tout moment. Les changements sont appliqués immédiatement et facturés au prorata.'
+  },
+  {
+    question: 'Y a-t-il des frais de configuration ?',
+    answer: 'Non, aucun frais de configuration. Nous vous accompagnons gratuitement dans la mise en place de votre compte.'
+  },
+  {
+    question: 'Que se passe-t-il si je dépasse mes limites ?',
+    answer: 'Nous vous prévenons avant d\'atteindre vos limites. Vous pouvez alors upgrader votre plan ou acheter des add-ons.'
+  },
+  {
+    question: 'Proposez-vous des remises pour les associations ?',
+    answer: 'Oui, nous offrons 50% de réduction sur tous nos plans pour les associations et ONG. Contactez-nous pour en bénéficier.'
+  }
+]
+
+export default function PricingPage() {
+  const [isYearly, setIsYearly] = useState(false)
+  return (
+    <div className="min-h-screen bg-white">
+      <Header />
+            <Link href="/auth/login" className="text-gray-600 hover:text-blue-600">Connexion</Link>
+          </nav>
+          <Link href="/auth/signup">
+            <Button>Essai gratuit</Button>
+          </Link>
+        </div>
+      </header>
+
+      {/* Hero */}
+      <section className="py-20 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+        <div className="container mx-auto px-4 text-center">
+          <Badge className="mb-6 bg-green-100 text-green-700 border-green-200">
+            💰 Tarifs transparents
+          </Badge>
+          <h1 className="text-4xl lg:text-6xl font-bold text-gray-900 mb-6">
+            Des tarifs simples et{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+              transparents
+            </span>
+          </h1>
+          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+            Choisissez le plan qui correspond à vos besoins. 
+            Aucun frais caché, changement de plan possible à tout moment.
+          </p>
+
+          {/* Billing Toggle */}
+          <div className="flex items-center justify-center gap-4 mb-8">
+            <span className={`text-sm ${!isYearly ? 'font-medium text-gray-900' : 'text-gray-500'}`}>
+              Mensuel
+            </span>
+            <Switch
+              checked={isYearly}
+              onCheckedChange={setIsYearly}
+              className="data-[state=checked]:bg-green-600"
+            />
+            <span className={`text-sm ${isYearly ? 'font-medium text-gray-900' : 'text-gray-500'}`}>
+              Annuel
+            </span>
+            <Badge className="bg-green-100 text-green-700 border-green-200">
+              -20%
+            </Badge>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Cards */}
+      <section className="py-20">
+        <div className="container mx-auto px-4">
+          <div className="grid lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+            {plans.map((plan, index) => {
+              const Icon = plan.icon
+              const price = isYearly ? plan.yearlyPrice : plan.monthlyPrice
+              const originalPrice = isYearly ? plan.monthlyPrice * 12 : null
+
+              return (
+                <Card
+                  key={index}
+                  className={`relative hover:shadow-xl transition-all duration-300 ${
+                    plan.popular 
+                      ? 'ring-2 ring-green-500 shadow-lg scale-105' 
+                      : 'hover:-translate-y-1'
+                  }`}
+                >
+                  {plan.popular && (
+                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                      <Badge className="bg-green-500 text-white px-6 py-1">
+                        ⭐ Le plus populaire
+                      </Badge>
+                    </div>
+                  )}
+
+                  <CardHeader className="text-center p-8">
+                    <div className={`inline-flex p-3 rounded-xl bg-${plan.color}-100 mb-4`}>
+                      <Icon className={`h-8 w-8 text-${plan.color}-600`} />
+                    </div>
+                    
+                    <CardTitle className="text-2xl font-bold">{plan.name}</CardTitle>
+                    <CardDescription className="text-gray-600 mt-2">
+                      {plan.description}
+                    </CardDescription>
+
+                    <div className="mt-6">
+                      <div className="flex items-baseline justify-center gap-2">
+                        <span className="text-4xl font-bold text-gray-900">
+                          {price}€
+                        </span>
+                        <span className="text-gray-500">
+                          /{isYearly ? 'an' : 'mois'}
+                        </span>
+                      </div>
+                      
+                      {isYearly && originalPrice && (
+                        <div className="text-sm text-gray-500 mt-1">
+                          <span className="line-through">{originalPrice}€/an</span>
+                          <span className="text-green-600 font-medium ml-2">
+                            Économisez {originalPrice - price}€
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="p-8 pt-0">
+                    <Button
+                      className={`w-full mb-8 ${
+                        plan.popular
+                          ? 'bg-green-600 hover:bg-green-700'
+                          : `bg-${plan.color}-600 hover:bg-${plan.color}-700`
+                      }`}
+                    >
+                      {plan.name === 'Enterprise' ? 'Nous contacter' : 'Commencer l\'essai'}
+                    </Button>
+
+                    {/* Features */}
+                    <div className="space-y-3">
+                      {plan.features.map((feature, featureIndex) => (
+                        <div key={featureIndex} className="flex items-start gap-3">
+                          <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                          <span className="text-gray-700 text-sm">{feature}</span>
+                        </div>
+                      ))}
+                      
+                      {plan.limitations && (
+                        <>
+                          <div className="border-t pt-4 mt-4">
+                            <p className="text-xs text-gray-500 mb-2">Limitations :</p>
+                            {plan.limitations.map((limitation, limitIndex) => (
+                              <div key={limitIndex} className="flex items-start gap-3">
+                                <X className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
+                                <span className="text-gray-500 text-xs">{limitation}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Add-ons */}
+      <section className="py-20 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-5xl font-bold text-gray-900 mb-6">
+              Options et services supplémentaires
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Personnalisez votre solution avec nos options à la carte.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+            {addons.map((addon, index) => (
+              <Card key={index} className="hover:shadow-lg transition-shadow duration-300">
+                <CardHeader>
+                  <CardTitle className="text-lg">{addon.name}</CardTitle>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {addon.price}€
+                    <span className="text-sm font-normal text-gray-500 ml-1">
+                      {addon.unit}
+                    </span>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription className="text-gray-600">
+                    {addon.description}
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="py-20">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-5xl font-bold text-gray-900 mb-6">
+              Questions fréquentes
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Retrouvez les réponses aux questions les plus courantes sur nos tarifs.
+            </p>
+          </div>
+
+          <div className="max-w-3xl mx-auto space-y-6">
+            {faqs.map((faq, index) => (
+              <Card key={index} className="hover:shadow-md transition-shadow duration-300">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-3">
+                    <HelpCircle className="h-5 w-5 text-blue-600" />
+                    {faq.question}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription className="text-gray-700">
+                    {faq.answer}
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-3xl lg:text-5xl font-bold mb-6">
+            Prêt à commencer ?
+          </h2>
+          <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
+            Testez SimplRH gratuitement pendant 14 jours. 
+            Aucune carte bancaire requise, annulation possible à tout moment.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/auth/signup">
+              <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
+                Commencer l'essai gratuit
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+            <Link href="/demo">
+              <Button variant="outline" size="lg" className="text-white border-white hover:bg-white hover:text-blue-600">
+                Voir la démo
+              </Button>
+            </Link>
+          </div>
+          <p className="mt-6 text-sm opacity-75">
+            ✓ 14 jours gratuits ✓ Support français ✓ Migration assistée ✓ Garantie satisfait ou remboursé
+          </p>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-gray-900 text-white py-12">
+        <div className="container mx-auto px-4">
+          <div className="grid md:grid-cols-4 gap-8">
+            <div>
+              <div className="text-2xl font-bold mb-4">SimplRH</div>
+              <p className="text-gray-400">
+                Simplifiez votre gestion d'entreprise
+              </p>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-4">Produit</h3>
+              <ul className="space-y-2 text-gray-400">
+                <li><Link href="/features" className="hover:text-white">Fonctionnalités</Link></li>
+                <li><Link href="/pricing" className="hover:text-white">Tarifs</Link></li>
+                <li><Link href="/demo" className="hover:text-white">Démo</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-4">Support</h3>
+              <ul className="space-y-2 text-gray-400">
+                <li><Link href="#" className="hover:text-white">Aide</Link></li>
+                <li><Link href="#" className="hover:text-white">Contact</Link></li>
+                <li><Link href="#" className="hover:text-white">Statut</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-4">Légal</h3>
+              <ul className="space-y-2 text-gray-400">
+                <li><Link href="/legal/terms" className="hover:text-white">CGU</Link></li>
+                <li><Link href="/legal/privacy" className="hover:text-white">Confidentialité</Link></li>
+              </ul>
+            </div>
+          </div>
+          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+            <p>&copy; 2024 SimplRH. Tous droits réservés.</p>
+          </div>
+        </div>
+      </footer>
+    </div>
+  )
+}
