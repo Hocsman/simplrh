@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -26,7 +26,7 @@ export default function LoginPage() {
   let supabase: any = null
   try {
     if (isSupabaseConfigured) {
-      supabase = createClientComponentClient()
+      supabase = createClient()
     }
   } catch (error) {
     setSupabaseError('Configuration Supabase manquante')
@@ -52,11 +52,31 @@ export default function LoginPage() {
       })
 
       if (error) {
-        toast({
-          variant: 'destructive',
-          title: 'Erreur de connexion',
-          description: error.message
-        })
+        // Check for specific error types
+        if (error.message?.includes('Invalid login credentials')) {
+          toast({
+            variant: 'destructive',
+            title: 'Identifiants incorrects',
+            description: 'Email ou mot de passe incorrect. Veuillez réessayer.'
+          })
+        } else if (error.message?.includes('Email not confirmed')) {
+          toast({
+            variant: 'destructive',
+            title: 'Email non confirmé',
+            description: (
+              <div>
+                Veuillez confirmer votre email avant de vous connecter.{' '}
+                <span className="text-xs">Vérifiez votre boîte de réception.</span>
+              </div>
+            ) as any
+          })
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Erreur de connexion',
+            description: error.message
+          })
+        }
       } else {
         toast({
           title: 'Connexion réussie',
