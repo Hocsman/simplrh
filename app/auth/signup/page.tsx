@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -27,7 +27,7 @@ export default function SignupPage() {
   let supabase: any = null
   try {
     if (isSupabaseConfigured) {
-      supabase = createClientComponentClient()
+      supabase = createClient()
     }
   } catch (error) {
     setSupabaseError('Configuration Supabase manquante')
@@ -60,11 +60,28 @@ export default function SignupPage() {
 
       if (error) {
         console.error('Erreur Supabase:', error)
-        toast({
-          variant: 'destructive',
-          title: 'Erreur d\'inscription',
-          description: `${error.message} (Code: ${error.status || 'inconnu'})`
-        })
+
+        // Check if user already exists
+        if (error.message?.includes('User already registered') || error.status === 422) {
+          toast({
+            variant: 'destructive',
+            title: 'Compte déjà existant',
+            description: (
+              <div>
+                Cet email est déjà utilisé.{' '}
+                <Link href="/auth/login" className="underline font-medium">
+                  Se connecter à la place
+                </Link>
+              </div>
+            ) as any
+          })
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Erreur d\'inscription',
+            description: `${error.message} (Code: ${error.status || 'inconnu'})`
+          })
+        }
       } else if (data.user) {
         console.log('Utilisateur créé avec succès:', data.user)
         
