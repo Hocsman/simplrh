@@ -4,6 +4,8 @@ import type { NextRequest } from 'next/server'
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
+  const token_hash = requestUrl.searchParams.get('token_hash')
+  const type = requestUrl.searchParams.get('type')
   const code = requestUrl.searchParams.get('code')
   const next = requestUrl.searchParams.get('next') || '/dashboard'
   const error = requestUrl.searchParams.get('error')
@@ -12,17 +14,38 @@ export async function GET(request: NextRequest) {
   // If there's an error from Supabase
   if (error) {
     console.error('Supabase auth error:', error, errorDescription)
-
-    // Redirect to login with error
     return NextResponse.redirect(
       `${requestUrl.origin}/auth/login?error=${encodeURIComponent(errorDescription || error)}`
     )
   }
 
-  if (code) {
-    const supabase = await createClient()
+  const supabase = await createClient()
 
-    // Exchange the code for a session
+  // Handle email confirmation or password recovery with token_hash
+  if (token_hash && type) {
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      token_hash,
+      type: type as 'email' | 'recovery' | 'signup' | 'invite' | 'magiclink',
+    })
+
+    if (verifyError) {
+      console.error('Error verifying OTP:', verifyError)
+      return NextResponse.redirect(
+        `${requestUrl.origin}/auth/login?error=${encodeURIComponent('Lien expiré ou invalide')}`
+      )
+    }
+
+    // If it's a password recovery, redirect to reset password page
+    if (type === 'recovery') {
+      return NextResponse.redirect(`${requestUrl.origin}/auth/reset-password?type=recovery`)
+    }
+
+    // Otherwise redirect to dashboard
+    return NextResponse.redirect(`${requestUrl.origin}${next}`)
+  }
+
+  // Handle OAuth callback with code
+  if (code) {
     const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
 
     if (exchangeError) {
@@ -32,23 +55,9 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Check if this is a password recovery
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (user) {
-      // Check if this is a password reset flow
-      const isPasswordReset = requestUrl.searchParams.get('type') === 'recovery'
-
-      if (isPasswordReset) {
-        // Redirect to password reset page
-        return NextResponse.redirect(`${requestUrl.origin}/auth/reset-password?type=recovery`)
-      }
-
-      // Otherwise redirect to next page (usually dashboard)
-      return NextResponse.redirect(`${requestUrl.origin}${next}`)
-    }
+    return NextResponse.redirect(`${requestUrl.origin}${next}`)
   }
 
-  // If no code and no error, redirect to login
+  // If no token_hash, code, or error, redirect to login
   return NextResponse.redirect(`${requestUrl.origin}/auth/login`)
 }
