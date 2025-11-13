@@ -13,11 +13,11 @@ export async function uploadPayrollExport(
   fileBuffer: Buffer,
   format: 'SilaeCSV' | 'PayFitCSV'
 ): Promise<UploadResult> {
-  const supabase = createClient()
-  
+  const supabase = await createClient()
+
   const fileName = `payroll-export-${orgId}-${period}.${format.toLowerCase()}`
   const filePath = `payroll-exports/${orgId}/${fileName}`
-  
+
   const { data, error } = await supabase.storage
     .from('documents')
     .upload(filePath, fileBuffer, {
@@ -46,10 +46,10 @@ export async function uploadDocument(
   fileBuffer: Buffer,
   contentType: string
 ): Promise<UploadResult> {
-  const supabase = createClient()
-  
+  const supabase = await createClient()
+
   const filePath = `documents/${orgId}/${fileName}`
-  
+
   const { data, error } = await supabase.storage
     .from('documents')
     .upload(filePath, fileBuffer, {
@@ -73,8 +73,8 @@ export async function uploadDocument(
 }
 
 export async function deleteFile(filePath: string): Promise<boolean> {
-  const supabase = createClient()
-  
+  const supabase = await createClient()
+
   const { error } = await supabase.storage
     .from('documents')
     .remove([filePath])

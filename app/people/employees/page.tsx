@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import Link from 'next/link'
-import { Plus, Search, Users, Mail } from 'lucide-react'
+import { Plus, Search, Users, Mail, Filter } from 'lucide-react'
 import { requireOrganization } from '@/domains/core/auth'
 import { getEmployees } from '@/domains/people/employees'
 

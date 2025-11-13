@@ -21,8 +21,8 @@ export interface LeaveRequest {
 }
 
 export async function getLeaveRequests(orgId: string): Promise<LeaveRequest[]> {
-  const supabase = createClient()
-  
+  const supabase = await createClient()
+
   const { data, error } = await supabase
     .from('leave_requests')
     .select(`
@@ -41,8 +41,8 @@ export async function getLeaveRequests(orgId: string): Promise<LeaveRequest[]> {
 }
 
 export async function getLeaveRequest(id: string, orgId: string): Promise<LeaveRequest | null> {
-  const supabase = createClient()
-  
+  const supabase = await createClient()
+
   const { data, error } = await supabase
     .from('leave_requests')
     .select(`
@@ -62,14 +62,14 @@ export async function getLeaveRequest(id: string, orgId: string): Promise<LeaveR
 }
 
 export async function updateLeaveRequestStatus(
-  id: string, 
-  orgId: string, 
+  id: string,
+  orgId: string,
   status: 'approved' | 'rejected',
   approverId: string,
   comment?: string
 ): Promise<boolean> {
-  const supabase = createClient()
-  
+  const supabase = await createClient()
+
   const { error } = await supabase
     .from('leave_requests')
     .update({
@@ -97,8 +97,8 @@ export async function createLeaveRequest(
   endDate: string,
   comment?: string
 ): Promise<LeaveRequest | null> {
-  const supabase = createClient()
-  
+  const supabase = await createClient()
+
   const { data, error } = await supabase
     .from('leave_requests')
     .insert({

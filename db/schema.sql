@@ -159,6 +159,7 @@ CREATE TABLE leave_requests (
     type TEXT NOT NULL,
     start_date DATE NOT NULL,
     end_date DATE NOT NULL,
+    days INTEGER DEFAULT 1,
     status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
     approver_id UUID REFERENCES users(id),
     comment TEXT,

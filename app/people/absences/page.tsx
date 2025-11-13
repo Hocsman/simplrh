@@ -43,7 +43,7 @@ export default async function AbsencesPage() {
     return acc
   }, {})
   
-  const uniqueTypes = [...new Set(absences.map(a => a.type))]
+  const uniqueTypes = Array.from(new Set(absences.map(a => a.type)))
   return (
     <div className="space-y-8">
       {/* Header */}
