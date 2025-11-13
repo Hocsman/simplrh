@@ -18,7 +18,7 @@ export type SignupFormData = z.infer<typeof signupSchema>
 // Organization schemas
 export const createOrganizationSchema = z.object({
   name: z.string().min(2, 'Le nom doit contenir au moins 2 caractères'),
-  siret: z.string().optional()
+  siret: z.string().optional().or(z.literal(''))
 })
 
 export const organizationSchema = createOrganizationSchema

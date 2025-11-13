@@ -60,6 +60,10 @@ export default function OnboardingPage() {
     e.preventDefault()
     if (!user) return
 
+    console.log('🚀 Creating organization...')
+    console.log('User:', user.email)
+    console.log('Org data:', orgData)
+
     setLoading(true)
     try {
       // Create organization via API
@@ -69,31 +73,47 @@ export default function OnboardingPage() {
         body: JSON.stringify(orgData)
       })
 
+      console.log('Response status:', response.status)
+
       if (!response.ok) {
-        throw new Error('Failed to create organization')
+        const errorData = await response.json()
+        console.error('❌ API Error:', errorData)
+        throw new Error(errorData.error || 'Failed to create organization')
       }
 
       const org = await response.json()
+      console.log('✅ Organization created:', org)
       
       // Update organization modules
+      console.log('Updating modules:', modules)
       const { error: moduleError } = await supabase
         .from('orgs')
         .update({ modules })
         .eq('id', org.id)
 
-      if (moduleError) throw moduleError
+      if (moduleError) {
+        console.error('Module update error:', moduleError)
+        throw moduleError
+      }
+
+      console.log('✅ Modules updated')
 
       toast({
-        title: 'Organisation créée !',
-        description: 'Votre espace SimplRH est maintenant configuré.'
+        title: '✅ Organisation créée !',
+        description: 'Votre espace SimplRH est maintenant configuré.',
+        duration: 3000
       })
 
-      router.push('/dashboard')
+      setTimeout(() => {
+        router.push('/dashboard')
+      }, 1000)
     } catch (error: any) {
+      console.error('❌ Error creating organization:', error)
       toast({
         variant: 'destructive',
         title: 'Erreur',
-        description: error.message || 'Impossible de créer l\'organisation'
+        description: error.message || 'Impossible de créer l\'organisation',
+        duration: 5000
       })
     } finally {
       setLoading(false)

@@ -1,143 +1,122 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 
-// Mock storage pour les paiements (en production : Supabase)
-let mockPayments: any[] = []
-let mockInvoices = [
-  {
-    id: 'FAC-2024-003',
-    client_name: 'E-Commerce Solutions',
-    amount: 12000,
-    due_date: '2024-08-01T00:00:00Z',
-    status: 'pending',
-    paid_amount: 0
-  },
-  {
-    id: 'FAC-2024-004',
-    client_name: 'StartupX',
-    amount: 5500,
-    due_date: '2024-07-10T00:00:00Z',
-    status: 'overdue',
-    paid_amount: 0
-  },
-  {
-    id: 'FAC-2024-006',
-    client_name: 'Digital Agency Pro',
-    amount: 7800,
-    due_date: '2024-08-05T00:00:00Z',
-    status: 'partial',
-    paid_amount: 3900
-  }
-]
-
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json()
-    
-    // Validation des données
-    const requiredFields = ['invoice_id', 'amount', 'payment_date', 'payment_method']
-    for (const field of requiredFields) {
-      if (!body[field]) {
-        return NextResponse.json(
-          { error: `Le champ ${field} est requis` },
-          { status: 400 }
-        )
-      }
-    }
-
-    // Vérifier que la facture existe
-    const invoice = mockInvoices.find(inv => inv.id === body.invoice_id)
-    if (!invoice) {
-      return NextResponse.json(
-        { error: 'Facture non trouvée' },
-        { status: 404 }
-      )
-    }
-
-    // Vérifier que le montant n'excède pas le montant restant dû
-    const remainingAmount = invoice.amount - invoice.paid_amount
-    if (body.amount > remainingAmount) {
-      return NextResponse.json(
-        { error: `Le montant du paiement (${body.amount}€) ne peut pas excéder le montant restant dû (${remainingAmount}€)` },
-        { status: 400 }
-      )
-    }
-
-    // Créer le paiement
-    const payment = {
-      id: `PAY-${Date.now()}`,
-      invoice_id: body.invoice_id,
-      invoice_number: invoice.id,
-      client_name: invoice.client_name,
-      amount: parseFloat(body.amount),
-      payment_date: body.payment_date,
-      payment_method: body.payment_method,
-      reference: body.reference || null,
-      bank_account: body.bank_account || null,
-      currency: body.currency || 'EUR',
-      transaction_fee: parseFloat(body.transaction_fee || 0),
-      exchange_rate: parseFloat(body.exchange_rate || 1),
-      notes: body.notes || null,
-      status: body.is_draft ? 'draft' : 'completed',
-      auto_reconcile: body.auto_reconcile || false,
-      send_confirmation: body.send_confirmation || false,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
-
-    // Calculer le montant net (pour usage interne)
-    const netAmount = payment.amount - payment.transaction_fee
-
-    // Ajouter le paiement
-    mockPayments.push(payment)
-
-    // Mettre à jour la facture si ce n'est pas un brouillon
-    if (!body.is_draft && payment.auto_reconcile) {
-      const updatedPaidAmount = invoice.paid_amount + payment.amount
-      
-      // Mettre à jour le statut de la facture
-      if (updatedPaidAmount >= invoice.amount) {
-        invoice.status = 'paid'
-        invoice.paid_amount = invoice.amount
-      } else {
-        invoice.status = 'partial'
-        invoice.paid_amount = updatedPaidAmount
-      }
-    }
-
-    // Simuler l'envoi d'email de confirmation
-    if (payment.send_confirmation && !body.is_draft) {
-      console.log(`📧 Email de confirmation envoyé à ${invoice.client_name}`)
-    }
-
-    return NextResponse.json({
-      success: true,
-      payment: payment,
-      message: body.is_draft 
-        ? 'Paiement sauvegardé en brouillon' 
-        : 'Paiement enregistré avec succès',
-      invoice_updated: payment.auto_reconcile && !body.is_draft
-    })
-
-  } catch (error: any) {
-    console.error('Erreur lors de l\'enregistrement du paiement:', error)
-    return NextResponse.json(
-      { error: 'Erreur interne du serveur' },
-      { status: 500 }
-    )
-  }
-}
-
+// GET - Récupérer tous les paiements
 export async function GET() {
   try {
-    // Retourner tous les paiements (pour debug)
-    return NextResponse.json({
-      payments: mockPayments,
-      invoices: mockInvoices
-    })
+    const supabase = await createClient()
+    
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) {
+      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+    }
+
+    const { data: member } = await supabase
+      .from('members')
+      .select('org_id')
+      .eq('user_id', user.id)
+      .single()
+
+    if (!member) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 })
+    }
+
+    // Get payments via invoices (payments n'a pas de org_id direct)
+    const { data: payments, error } = await supabase
+      .from('payments')
+      .select(`
+        *,
+        invoice:invoices(id, number, total_ttc, org_id)
+      `)
+      .order('created_at', { ascending: false })
+    
+    // Filter by org_id on the client side
+    const filteredPayments = payments?.filter(p => p.invoice?.org_id === member.org_id) || []
+
+    if (error) {
+      console.error('Error fetching payments:', error)
+      return NextResponse.json({ error: 'Erreur lors de la récupération des paiements' }, { status: 500 })
+    }
+
+    console.log(`✅ Found ${filteredPayments.length} payments`)
+    return NextResponse.json({ payments: filteredPayments })
   } catch (error: any) {
+    console.error('Error in payments GET:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
 
+// POST - Enregistrer un nouveau paiement
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+    
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) {
+      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+    }
 
+    const { data: member } = await supabase
+      .from('members')
+      .select('org_id')
+      .eq('user_id', user.id)
+      .single()
 
+    if (!member) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 })
+    }
+
+    const body = await request.json()
+    console.log('📝 Creating payment:', body)
+    
+    const { invoice_id, amount, payment_method, payment_date, reference } = body
+    
+    if (!invoice_id || !amount) {
+      return NextResponse.json({ error: 'Données manquantes' }, { status: 400 })
+    }
+
+    // payments table n'a pas de org_id, seulement invoice_id
+    const paymentData = {
+      invoice_id,
+      amount,
+      method: payment_method || 'bank_transfer',
+      paid_at: payment_date ? new Date(payment_date).toISOString() : new Date().toISOString()
+    }
+
+    const { data: payment, error } = await supabase
+      .from('payments')
+      .insert(paymentData)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('❌ Payment creation error:', error)
+      return NextResponse.json({ 
+        error: 'Erreur lors de l\'enregistrement du paiement',
+        details: error.message 
+      }, { status: 500 })
+    }
+
+    // Update invoice status to 'paid' if fully paid
+    const { data: invoice } = await supabase
+      .from('invoices')
+      .select('total_ttc')
+      .eq('id', invoice_id)
+      .single()
+
+    if (invoice && amount >= invoice.total_ttc) {
+      await supabase
+        .from('invoices')
+        .update({ status: 'paid' })
+        .eq('id', invoice_id)
+      
+      console.log('✅ Invoice marked as paid')
+    }
+
+    console.log('✅ Payment created:', payment.id)
+    return NextResponse.json({ payment }, { status: 201 })
+  } catch (error: any) {
+    console.error('❌ Error in payments POST:', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+}

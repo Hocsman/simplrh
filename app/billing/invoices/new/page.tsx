@@ -40,11 +40,25 @@ export default function NewInvoicePage() {
     date.setDate(date.getDate() + 30)
     setDueDate(date.toISOString().split('T')[0])
     
-    // Fetch customers (stub)
-    setCustomers([
-      { id: '1', name: 'Client Demo', email: 'client@example.com' },
-      { id: '2', name: 'Autre Client', email: 'autre@example.com' }
-    ])
+    // Fetch real customers from API
+    const fetchCustomers = async () => {
+      try {
+        const response = await fetch('/api/billing/customers')
+        if (response.ok) {
+          const data = await response.json()
+          setCustomers(data.customers || [])
+        }
+      } catch (error) {
+        console.error('Error fetching customers:', error)
+        toast({
+          variant: 'destructive',
+          title: 'Erreur',
+          description: 'Impossible de charger les clients'
+        })
+      }
+    }
+    
+    fetchCustomers()
   }, [])
 
   const addItem = () => {
@@ -148,18 +162,34 @@ export default function NewInvoicePage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Client *
               </label>
-              <Select value={selectedCustomer} onValueChange={setSelectedCustomer} required>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un client" />
-                </SelectTrigger>
-                <SelectContent>
-                  {customers.map((customer) => (
-                    <SelectItem key={customer.id} value={customer.id}>
-                      {customer.name} {customer.email && `(${customer.email})`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {customers.length === 0 ? (
+                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                  <p className="text-sm text-yellow-800 mb-2">
+                    Aucun client trouvé. Vous devez d'abord créer un client.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push('/billing/customers/new')}
+                  >
+                    Créer un client
+                  </Button>
+                </div>
+              ) : (
+                <Select value={selectedCustomer} onValueChange={setSelectedCustomer} required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un client" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {customers.map((customer) => (
+                      <SelectItem key={customer.id} value={customer.id}>
+                        {customer.name} {customer.email && `(${customer.email})`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             <div>

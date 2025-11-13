@@ -4,18 +4,9 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
   
-  // 🔧 MODE DÉVELOPPEMENT : Authentification désactivée temporairement
-  // Pour activer l'authentification, changez cette valeur à false
-  const DEV_MODE_NO_AUTH = true
-  
-  if (DEV_MODE_NO_AUTH) {
-    console.log('🔓 Mode développement : authentification désactivée')
-    return res
-  }
-  
   // Check if Supabase is configured
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL === 'https://your-project.supabase.co') {
-    // If Supabase is not configured, allow access to all routes
+    console.log('⚠️ Supabase non configuré - mode développement')
     return res
   }
   
@@ -44,16 +35,32 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', req.url))
   }
 
-  // Special handling for onboarding
-  if (req.nextUrl.pathname === '/onboarding' && session) {
-    // Check if user already has an organization
-    const { data: orgs } = await supabase
+  // Check if user has organization (except for onboarding page)
+  if (session && isProtectedPath && req.nextUrl.pathname !== '/onboarding') {
+    const { data: members } = await supabase
       .from('members')
       .select('org_id')
       .eq('user_id', session.user.id)
       .limit(1)
 
-    if (orgs && orgs.length > 0) {
+    // If no organization, redirect to onboarding
+    if (!members || members.length === 0) {
+      console.log('📋 User has no organization, redirecting to onboarding')
+      return NextResponse.redirect(new URL('/onboarding', req.url))
+    }
+  }
+
+  // Special handling for onboarding
+  if (req.nextUrl.pathname === '/onboarding' && session) {
+    // Check if user already has an organization
+    const { data: members } = await supabase
+      .from('members')
+      .select('org_id')
+      .eq('user_id', session.user.id)
+      .limit(1)
+
+    if (members && members.length > 0) {
+      console.log('✅ User already has organization, redirecting to dashboard')
       return NextResponse.redirect(new URL('/dashboard', req.url))
     }
   }

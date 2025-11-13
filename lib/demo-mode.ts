@@ -23,3 +23,4 @@ export const DEMO_MODE_MESSAGE = "Mode démo activé - Supabase non configuré. 
 
 
 
+
