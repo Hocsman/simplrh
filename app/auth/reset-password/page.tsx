@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -33,6 +33,30 @@ function ResetPasswordForm() {
 
   const supabase = isSupabaseConfigured ? createClient() : null
 
+  // Exchange code for session when landing from email link
+  useEffect(() => {
+    const code = searchParams.get('code')
+
+    if (code && isUpdateMode && supabase) {
+      const exchangeCode = async () => {
+        const { error } = await supabase.auth.exchangeCodeForSession(code)
+
+        if (error) {
+          console.error('Error exchanging code:', error)
+          toast({
+            variant: 'destructive',
+            title: 'Lien invalide',
+            description: 'Le lien de réinitialisation a expiré ou est invalide. Veuillez en demander un nouveau.'
+          })
+        } else {
+          console.log('Code exchanged successfully, user can now reset password')
+        }
+      }
+
+      exchangeCode()
+    }
+  }, [searchParams, isUpdateMode, supabase, toast])
+
   const handleRequestReset = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -49,7 +73,7 @@ function ResetPasswordForm() {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
+        redirectTo: `${window.location.origin}/auth/reset-password`,
       })
 
       if (error) {
