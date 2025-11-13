@@ -1,129 +1,87 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 
 interface DownloadRouteProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export async function GET(request: NextRequest, { params }: DownloadRouteProps) {
   try {
-    const { id } = params
+    const { id } = await params
+    const supabase = await createClient()
 
-    // Mock document data
-    const documents = {
-      '1': {
-        title: 'Contrat de prestation - TechStart SAS',
-        filename: 'contrat_prestation_techstart.pdf'
-      },
-      '2': {
-        title: 'CGV E-commerce - MonShop',
-        filename: 'cgv_ecommerce_monshop.pdf'
-      },
-      '3': {
-        title: 'Lettre de mise en demeure - Client X',
-        filename: 'mise_en_demeure_client_x.pdf'
-      }
+    // Get current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) {
+      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
 
-    const document = documents[id as keyof typeof documents]
-    
-    if (!document) {
-      return NextResponse.json(
-        { error: 'Document not found' },
-        { status: 404 }
-      )
+    // Get user's organization
+    const { data: member } = await supabase
+      .from('members')
+      .select('org_id')
+      .eq('user_id', user.id)
+      .single()
+
+    if (!member) {
+      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 })
     }
 
-    // Create mock PDF content with document ID
-    const pdfContent = `%PDF-1.4
-1 0 obj
-<<
-/Type /Catalog
-/Pages 2 0 R
->>
-endobj
+    // Get document request with files
+    const { data: docRequest, error: docError } = await supabase
+      .from('doc_requests')
+      .select(`
+        *,
+        files:doc_files(*)
+      `)
+      .eq('id', id)
+      .eq('org_id', member.org_id)
+      .single()
 
-2 0 obj
-<<
-/Type /Pages
-/Kids [3 0 R]
-/Count 1
->>
-endobj
+    if (docError || !docRequest) {
+      return NextResponse.json({ error: 'Document non trouvé' }, { status: 404 })
+    }
 
-3 0 obj
-<<
-/Type /Page
-/Parent 2 0 R
-/MediaBox [0 0 612 792]
-/Contents 4 0 R
-/Resources <<
-/Font <<
-/F1 5 0 R
->>
->>
->>
-endobj
+    if (docRequest.status !== 'generated' || !docRequest.files || docRequest.files.length === 0) {
+      return NextResponse.json({ error: 'Document non disponible' }, { status: 404 })
+    }
 
-4 0 obj
-<<
-/Length 128
->>
-stream
-BT
-/F1 12 Tf
-50 750 Td
-(Document généré par SimplRH) Tj
-0 -20 Td
-(Mode test - PDF fictif) Tj
-0 -20 Td
-(ID: ${id}) Tj
-ET
-endstream
-endobj
+    const file = docRequest.files[0]
 
-5 0 obj
-<<
-/Type /Font
-/Subtype /Type1
-/BaseFont /Helvetica
->>
-endobj
+    // Download file from Supabase Storage
+    const { data: fileData, error: downloadError } = await supabase
+      .storage
+      .from('documents')
+      .download(file.path)
 
-xref
-0 6
-0000000000 65535 f 
-0000000010 00000 n 
-0000000053 00000 n 
-0000000101 00000 n 
-0000000249 00000 n 
-0000000426 00000 n 
-trailer
-<<
-/Size 6
-/Root 1 0 R
->>
-startxref
-523
-%%EOF`
-    const buffer = Buffer.from(pdfContent, 'utf-8')
+    if (downloadError || !fileData) {
+      console.error('Download error:', downloadError)
+      return NextResponse.json({ error: 'Erreur lors du téléchargement' }, { status: 500 })
+    }
+
+    // Convert Blob to Buffer
+    const arrayBuffer = await fileData.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+
+    // Extract filename from path
+    const filename = file.path.split('/').pop() || 'document.pdf'
 
     // Return PDF with proper headers
     return new NextResponse(buffer, {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${document.filename}"`,
+        'Content-Disposition': `attachment; filename="${filename}"`,
         'Content-Length': buffer.length.toString(),
-        'Cache-Control': 'no-cache'
+        'Cache-Control': 'private, max-age=3600'
       }
     })
-
   } catch (error: any) {
-    console.error('Document download error:', error)
+    console.error('❌ Document download error:', error)
     return NextResponse.json(
-      { error: 'Failed to download document' },
+      { error: 'Erreur lors du téléchargement du document' },
       { status: 500 }
     )
   }

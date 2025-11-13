@@ -1,5 +1,4 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 import { logAuditEvent } from '../core/audit'
 
@@ -161,18 +160,7 @@ export const DEFAULT_TEMPLATES: Omit<DocTemplate, 'id' | 'created_at' | 'updated
 ]
 
 export async function getPublicTemplates() {
-  const cookieStore = cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
-      },
-    }
-  )
+  const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('doc_templates')
@@ -185,18 +173,7 @@ export async function getPublicTemplates() {
 }
 
 export async function getTemplate(key: string, orgId?: string) {
-  const cookieStore = cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
-      },
-    }
-  )
+  const supabase = await createClient()
 
   let query = supabase
     .from('doc_templates')
@@ -223,18 +200,7 @@ export async function createDocumentRequest(
   data: GenerateDocumentData,
   actorId?: string
 ) {
-  const cookieStore = cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
-      },
-    }
-  )
+  const supabase = await createClient()
 
   const { data: request, error } = await supabase
     .from('doc_requests')
@@ -261,18 +227,7 @@ export async function createDocumentRequest(
 }
 
 export async function getDocumentRequests(orgId: string) {
-  const cookieStore = cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
-      },
-    }
-  )
+  const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('doc_requests')
@@ -294,18 +249,7 @@ export async function updateDocumentRequestStatus(
   filePath?: string,
   fileType?: 'pdf' | 'docx'
 ) {
-  const cookieStore = cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
-      },
-    }
-  )
+  const supabase = await createClient()
 
   // Update request status
   const { data: request, error: requestError } = await supabase
