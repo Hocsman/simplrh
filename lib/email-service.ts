@@ -1,15 +1,10 @@
-import nodemailer from 'nodemailer'
+import mailjet from 'node-mailjet'
 
-// Configuration SMTP
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD,
-  },
-})
+// Configuration Mailjet
+const mailjetClient = process.env.MAILJET_API_KEY && process.env.MAILJET_SECRET_KEY
+  ? mailjet
+      .apiConnect(process.env.MAILJET_API_KEY, process.env.MAILJET_SECRET_KEY)
+  : null
 
 interface SendInvoiceEmailProps {
   to: string
@@ -91,37 +86,57 @@ export async function sendInvoiceEmail(props: SendInvoiceEmailProps) {
     </div>
   `
 
-  const mailOptions = {
-    from: `${organizationName} <${process.env.SMTP_FROM || organizationEmail}>`,
-    to,
-    subject: `Votre facture ${invoiceNumber} - ${organizationName}`,
-    html,
-    attachments: [
-      {
-        filename: `${invoiceNumber}.pdf`,
-        content: pdfBuffer,
-        contentType: 'application/pdf',
-      },
-    ],
-  }
+  const fromEmail = process.env.SMTP_FROM || organizationEmail
 
   try {
-    // Vérifier la configuration SMTP
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
-      console.warn('⚠️ SMTP not configured - email would be sent in production')
+    // Vérifier la configuration Mailjet
+    if (!mailjetClient) {
+      console.warn('⚠️ Mailjet not configured - email would be sent in production')
       console.log('Email preview:', {
         to,
-        subject: mailOptions.subject,
+        subject: `Votre facture ${invoiceNumber} - ${organizationName}`,
         hasAttachment: !!pdfBuffer,
       })
       return { success: true, preview: true }
     }
 
-    const result = await transporter.sendMail(mailOptions)
-    console.log('✅ Email sent successfully:', result.messageId)
-    return { success: true, messageId: result.messageId }
+    // Convertir le PDF buffer en base64 pour l'attachement
+    const pdfBase64 = pdfBuffer.toString('base64')
+
+    const request = mailjetClient
+      .post('send', { version: 'v3.1' })
+      .request({
+        Messages: [
+          {
+            From: {
+              Email: fromEmail,
+              Name: organizationName,
+            },
+            To: [
+              {
+                Email: to,
+                Name: customerName,
+              },
+            ],
+            Subject: `Votre facture ${invoiceNumber} - ${organizationName}`,
+            HTMLPart: html,
+            Attachments: [
+              {
+                ContentType: 'application/pdf',
+                Filename: `${invoiceNumber}.pdf`,
+                Base64Content: pdfBase64,
+              },
+            ],
+          },
+        ],
+      })
+
+    const result = await request
+    const messageId = result.body.Messages[0].ID
+    console.log('✅ Email sent successfully via Mailjet:', messageId)
+    return { success: true, messageId }
   } catch (error: any) {
-    console.error('❌ Error sending email:', error)
+    console.error('❌ Error sending email via Mailjet:', error)
     throw new Error(`Erreur lors de l'envoi du email: ${error.message}`)
   }
 }
@@ -223,25 +238,42 @@ export async function sendReminderEmail(props: SendReminderEmailProps) {
     </div>
   `
 
-  const mailOptions = {
-    from: `${organizationName} <${process.env.SMTP_FROM || organizationEmail}>`,
-    to,
-    subject,
-    html,
-  }
+  const fromEmail = process.env.SMTP_FROM || organizationEmail
 
   try {
-    // Vérifier la configuration SMTP
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
-      console.warn('⚠️ SMTP not configured - reminder would be sent in production')
+    // Vérifier la configuration Mailjet
+    if (!mailjetClient) {
+      console.warn('⚠️ Mailjet not configured - reminder would be sent in production')
       return { success: true, preview: true }
     }
 
-    const result = await transporter.sendMail(mailOptions)
-    console.log('✅ Reminder email sent successfully:', result.messageId)
-    return { success: true, messageId: result.messageId }
+    const request = mailjetClient
+      .post('send', { version: 'v3.1' })
+      .request({
+        Messages: [
+          {
+            From: {
+              Email: fromEmail,
+              Name: organizationName,
+            },
+            To: [
+              {
+                Email: to,
+                Name: customerName,
+              },
+            ],
+            Subject: subject,
+            HTMLPart: html,
+          },
+        ],
+      })
+
+    const result = await request
+    const messageId = result.body.Messages[0].ID
+    console.log('✅ Reminder email sent successfully via Mailjet:', messageId)
+    return { success: true, messageId }
   } catch (error: any) {
-    console.error('❌ Error sending reminder email:', error)
+    console.error('❌ Error sending reminder email via Mailjet:', error)
     throw new Error(`Erreur lors de l'envoi de la relance: ${error.message}`)
   }
 }
