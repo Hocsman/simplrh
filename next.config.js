@@ -29,13 +29,6 @@ const nextConfig = {
 
   // Webpack optimizations
   webpack: (config, { isServer }) => {
-    if (!isServer) {
-      // Reduce client-side bundle size
-      config.optimization = {
-        ...config.optimization,
-        usedExports: true,
-      }
-    }
     return config
   },
 
