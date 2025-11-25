@@ -1,8 +1,11 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { 
+import {
   Plus,
   Search,
   Filter,
@@ -13,36 +16,56 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 
+interface Invoice {
+  id: string
+  number: string
+  status: 'draft' | 'sent' | 'paid' | 'overdue' | 'partially_paid'
+  customer: {
+    name: string
+    email: string
+  }
+  total_ttc: number
+  due_date: string
+  created_at: string
+}
+
 export default function BillingPage() {
-  const invoices = [
-    {
-      id: '1',
-      number: 'FACT-2024-001',
-      customer: 'Client Demo SARL',
-      amount: 1200,
-      status: 'sent',
-      dueDate: '2024-12-31',
-      createdAt: '2024-12-01'
-    },
-    {
-      id: '2',
-      number: 'FACT-2024-002',
-      customer: 'Entreprise ABC',
-      amount: 850,
-      status: 'paid',
-      dueDate: '2024-12-15',
-      createdAt: '2024-11-25'
-    },
-    {
-      id: '3',
-      number: 'FACT-2024-003',
-      customer: 'Société XYZ',
-      amount: 2100,
-      status: 'overdue',
-      dueDate: '2024-11-30',
-      createdAt: '2024-11-01'
+  const [invoices, setInvoices] = useState<Invoice[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchInvoices = async () => {
+      try {
+        const response = await fetch('/api/billing/invoices')
+        if (response.ok) {
+          const data = await response.json()
+          setInvoices(data.invoices || [])
+        }
+      } catch (error) {
+        console.error('Error fetching invoices:', error)
+      } finally {
+        setLoading(false)
+      }
     }
-  ]
+
+    fetchInvoices()
+  }, [])
+
+  // Calculer les stats
+  const stats = {
+    totalAmount: invoices.reduce((sum, inv) => sum + inv.total_ttc, 0),
+    pendingAmount: invoices
+      .filter((inv) => inv.status === 'sent' || inv.status === 'partially_paid')
+      .reduce((sum, inv) => sum + inv.total_ttc, 0),
+    overdueAmount: invoices
+      .filter((inv) => inv.status === 'overdue')
+      .reduce((sum, inv) => sum + inv.total_ttc, 0),
+    paidAmount: invoices
+      .filter((inv) => inv.status === 'paid')
+      .reduce((sum, inv) => sum + inv.total_ttc, 0),
+  }
+
+  const recentInvoices = invoices.slice(0, 5)
 
   return (
     <div className="space-y-8">
@@ -78,13 +101,15 @@ export default function BillingPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">45 320 €</div>
+            <div className="text-2xl font-bold">
+              {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(stats.totalAmount)}
+            </div>
             <p className="text-xs text-muted-foreground">
-              +12% ce mois
+              {invoices.length} facture{invoices.length > 1 ? 's' : ''}
             </p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -92,9 +117,11 @@ export default function BillingPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">8 500 €</div>
+            <div className="text-2xl font-bold">
+              {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(stats.pendingAmount)}
+            </div>
             <p className="text-xs text-muted-foreground">
-              12 factures
+              {invoices.filter((inv) => inv.status === 'sent' || inv.status === 'partially_paid').length} facture{invoices.filter((inv) => inv.status === 'sent' || inv.status === 'partially_paid').length !== 1 ? 's' : ''}
             </p>
           </CardContent>
         </Card>
@@ -106,9 +133,11 @@ export default function BillingPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2 100 €</div>
+            <div className="text-2xl font-bold text-red-600">
+              {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(stats.overdueAmount)}
+            </div>
             <p className="text-xs text-muted-foreground">
-              1 facture
+              {invoices.filter((inv) => inv.status === 'overdue').length} facture{invoices.filter((inv) => inv.status === 'overdue').length !== 1 ? 's' : ''}
             </p>
           </CardContent>
         </Card>
@@ -116,13 +145,15 @@ export default function BillingPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              DSO moyen
+              Payées
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">24 jours</div>
+            <div className="text-2xl font-bold text-green-600">
+              {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(stats.paidAmount)}
+            </div>
             <p className="text-xs text-muted-foreground">
-              -3 jours ce mois
+              {invoices.filter((inv) => inv.status === 'paid').length} facture{invoices.filter((inv) => inv.status === 'paid').length !== 1 ? 's' : ''}
             </p>
           </CardContent>
         </Card>
@@ -150,54 +181,91 @@ export default function BillingPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {invoices.map((invoice) => (
-              <div key={invoice.id} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center space-x-4">
-                  <div>
-                    <p className="font-medium">{invoice.number}</p>
-                    <p className="text-sm text-muted-foreground">{invoice.customer}</p>
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+            </div>
+          ) : recentInvoices.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground mb-4">Aucune facture pour le moment</p>
+              <Button asChild>
+                <Link href="/billing/invoices/new">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Créer la première facture
+                </Link>
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {recentInvoices.map((invoice) => {
+                const statusConfig: { [key: string]: { label: string; variant: any } } = {
+                  draft: { label: 'Brouillon', variant: 'secondary' },
+                  sent: { label: 'Envoyée', variant: 'secondary' },
+                  paid: { label: 'Payée', variant: 'default' },
+                  overdue: { label: 'En retard', variant: 'destructive' },
+                  partially_paid: { label: 'Partiellement payée', variant: 'secondary' },
+                }
+                const config = statusConfig[invoice.status] || statusConfig.draft
+
+                return (
+                  <div key={invoice.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center space-x-4">
+                      <div>
+                        <p className="font-medium">{invoice.number}</p>
+                        <p className="text-sm text-muted-foreground">{invoice.customer.name}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-4">
+                      <Badge variant={config.variant}>
+                        {config.label}
+                      </Badge>
+
+                      <div className="text-right">
+                        <p className="font-medium">
+                          {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(
+                            invoice.total_ttc
+                          )}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Échéance: {new Date(invoice.due_date).toLocaleDateString('fr-FR')}
+                        </p>
+                      </div>
+
+                      <div className="flex space-x-1">
+                        <Button variant="ghost" size="icon" asChild title="Voir détails">
+                          <Link href={`/billing/invoices/${invoice.id}`}>
+                            <Eye className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                        {invoice.status === 'draft' && (
+                          <Button variant="ghost" size="icon" asChild title="Modifier">
+                            <Link href={`/billing/invoices/${invoice.id}/edit`}>
+                              <Edit className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                        )}
+                        <Button variant="ghost" size="icon" asChild title="Télécharger">
+                          <Link href={`/billing/invoices/${invoice.id}/download`}>
+                            <Download className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      </div>
+                    </div>
                   </div>
+                )
+              })}
+              {invoices.length > 5 && (
+                <div className="text-center mt-4">
+                  <Button variant="outline" asChild>
+                    <Link href="/billing/invoices">
+                      Voir toutes les factures ({invoices.length})
+                    </Link>
+                  </Button>
                 </div>
-                
-                <div className="flex items-center space-x-4">
-                  <Badge variant={
-                    invoice.status === 'paid' ? 'success' : 
-                    invoice.status === 'overdue' ? 'destructive' : 'secondary'
-                  }>
-                    {invoice.status === 'paid' ? 'Payée' : 
-                     invoice.status === 'overdue' ? 'En retard' : 'Envoyée'}
-                  </Badge>
-                  
-                  <div className="text-right">
-                    <p className="font-medium">{invoice.amount.toLocaleString('fr-FR')} €</p>
-                    <p className="text-sm text-muted-foreground">
-                      Échéance: {new Date(invoice.dueDate).toLocaleDateString('fr-FR')}
-                    </p>
-                  </div>
-                  
-                  <div className="flex space-x-1">
-                    <Button variant="ghost" size="icon" asChild>
-                      <Link href={`/billing/invoices/${invoice.id}`}>
-                        <Eye className="h-4 w-4" />
-                      </Link>
-                    </Button>
-                    <Button variant="ghost" size="icon" asChild>
-                      <Link href={`/billing/invoices/${invoice.id}/edit`}>
-                        <Edit className="h-4 w-4" />
-                      </Link>
-                    </Button>
-                    <Button variant="ghost" size="icon">
-                      <Download className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

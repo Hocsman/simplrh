@@ -218,12 +218,14 @@ export default function InvoiceDetailPage() {
                 {sending ? 'Envoi...' : 'Envoyer par email'}
               </Button>
 
-              <Link href={`/billing/invoices/${id}/edit`}>
-                <Button size="sm" variant="outline">
-                  <Edit className="h-4 w-4 mr-2" />
-                  Modifier
-                </Button>
-              </Link>
+              {invoice.status === 'draft' && (
+                <Link href={`/billing/invoices/${id}/edit`}>
+                  <Button size="sm" variant="outline">
+                    <Edit className="h-4 w-4 mr-2" />
+                    Modifier
+                  </Button>
+                </Link>
+              )}
 
               <Button onClick={handleDelete} disabled={deleting} size="sm" variant="destructive">
                 <Trash2 className="h-4 w-4 mr-2" />
