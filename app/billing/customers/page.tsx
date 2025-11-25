@@ -297,25 +297,29 @@ export default function ClientsPage() {
           </Card>
         </Link>
         
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-          <CardContent className="p-6 text-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <FileText className="h-8 w-8 text-green-600" />
-            </div>
-            <h3 className="font-semibold text-lg mb-2">Nouvelle facture</h3>
-            <p className="text-gray-600 text-sm">Créer une facture pour un client existant</p>
-          </CardContent>
-        </Card>
-        
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-          <CardContent className="p-6 text-center">
-            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CreditCard className="h-8 w-8 text-purple-600" />
-            </div>
-            <h3 className="font-semibold text-lg mb-2">Suivi paiements</h3>
-            <p className="text-gray-600 text-sm">Consulter l'état des paiements clients</p>
-          </CardContent>
-        </Card>
+        <Link href="/billing/invoices/new">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+            <CardContent className="p-6 text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FileText className="h-8 w-8 text-green-600" />
+              </div>
+              <h3 className="font-semibold text-lg mb-2">Nouvelle facture</h3>
+              <p className="text-gray-600 text-sm">Créer une facture pour un client existant</p>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/billing/payments">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+            <CardContent className="p-6 text-center">
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CreditCard className="h-8 w-8 text-purple-600" />
+              </div>
+              <h3 className="font-semibold text-lg mb-2">Suivi paiements</h3>
+              <p className="text-gray-600 text-sm">Consulter l'état des paiements clients</p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
     </div>
   )
