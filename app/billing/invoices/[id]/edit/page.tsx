@@ -79,11 +79,15 @@ export default function EditInvoicePage() {
 
   const updateItem = (index: number, field: keyof InvoiceItem, value: string | number) => {
     const newItems = [...items]
+    const updatedItem = { ...newItems[index] }
+
     if (field === 'qty' || field === 'unit_price' || field === 'vat_rate') {
-      newItems[index] = { ...newItems[index], [field]: Number(value) }
-    } else {
-      newItems[index] = { ...newItems[index], [field]: value }
+      updatedItem[field] = Number(value)
+    } else if (field === 'label') {
+      updatedItem[field] = String(value)
     }
+
+    newItems[index] = updatedItem
     setItems(newItems)
   }
 
