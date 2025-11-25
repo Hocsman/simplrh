@@ -103,7 +103,7 @@ export async function sendInvoiceEmail(props: SendInvoiceEmailProps) {
     // Convertir le PDF buffer en base64 pour l'attachement
     const pdfBase64 = pdfBuffer.toString('base64')
 
-    const request = mailjetClient
+    const result = await (mailjetClient as any)
       .post('send', { version: 'v3.1' })
       .request({
         Messages: [
@@ -131,8 +131,7 @@ export async function sendInvoiceEmail(props: SendInvoiceEmailProps) {
         ],
       })
 
-    const result = await request
-    const messageId = result.body.Messages[0].ID
+    const messageId = result.body?.Messages?.[0]?.ID || 'sent'
     console.log('✅ Email sent successfully via Mailjet:', messageId)
     return { success: true, messageId }
   } catch (error: any) {
@@ -247,7 +246,7 @@ export async function sendReminderEmail(props: SendReminderEmailProps) {
       return { success: true, preview: true }
     }
 
-    const request = mailjetClient
+    const result = await (mailjetClient as any)
       .post('send', { version: 'v3.1' })
       .request({
         Messages: [
@@ -268,8 +267,7 @@ export async function sendReminderEmail(props: SendReminderEmailProps) {
         ],
       })
 
-    const result = await request
-    const messageId = result.body.Messages[0].ID
+    const messageId = result.body?.Messages?.[0]?.ID || 'sent'
     console.log('✅ Reminder email sent successfully via Mailjet:', messageId)
     return { success: true, messageId }
   } catch (error: any) {
