@@ -2,120 +2,186 @@ import PDFDocument from 'pdfkit'
 import { Invoice, Customer, InvoiceItem } from '../domains/billing/invoices'
 import { FacturXInvoiceData } from './facturx'
 
-export interface PDFInvoiceData extends Invoice {
-  customer: Customer
+export interface PDFInvoiceData {
+  invoice: Invoice & { customer?: any }
+  organization?: any
   items: InvoiceItem[]
-  company: {
-    name: string
-    address: string
-    siret?: string
-    email?: string
-    phone?: string
-  }
 }
 
 export function generateInvoicePDF(data: PDFInvoiceData): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     try {
-      const doc = new PDFDocument({ margin: 50 })
+      const doc = new PDFDocument({ margin: 40, size: 'A4' })
       const chunks: Buffer[] = []
 
       doc.on('data', (chunk) => chunks.push(chunk))
       doc.on('end', () => resolve(Buffer.concat(chunks)))
 
-      // Header
-      doc.fontSize(20)
-         .text('FACTURE', 50, 50)
-         .fontSize(10)
-         .text(`N° ${data.number}`, 50, 80)
-         .text(`Date: ${new Date(data.created_at).toLocaleDateString('fr-FR')}`, 50, 95)
-         
-      if (data.due_date) {
-        doc.text(`Échéance: ${new Date(data.due_date).toLocaleDateString('fr-FR')}`, 50, 110)
+      const { invoice, organization, items } = data
+      const pageWidth = doc.page.width
+      const pageHeight = doc.page.height
+      const margins = 40
+
+      // En-tête - Titre facture
+      doc.fontSize(24)
+         .font('Helvetica-Bold')
+         .text('FACTURE', margins, 40)
+
+      // Infos facture (droite)
+      doc.fontSize(10)
+         .font('Helvetica')
+         .text(`N° ${invoice.number}`, pageWidth - 200, 45)
+         .text(`Date: ${new Date(invoice.created_at).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })}`, pageWidth - 200, 60)
+
+      if (invoice.due_date) {
+        doc.text(`Date limite: ${new Date(invoice.due_date).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })}`, pageWidth - 200, 75)
       }
 
-      // Company info (right side)
-      doc.text(data.company.name, 350, 50)
-         .text(data.company.address, 350, 65)
-         
-      if (data.company.siret) {
-        doc.text(`SIRET: ${data.company.siret}`, 350, 95)
+      doc.text(`Statut: ${getStatusLabel(invoice.status)}`, pageWidth - 200, invoice.due_date ? 90 : 75)
+
+      // Séparateur
+      doc.moveTo(margins, 110).lineTo(pageWidth - margins, 110).stroke()
+
+      // Infos émetteur (organisation)
+      if (organization) {
+        doc.fontSize(11)
+           .font('Helvetica-Bold')
+           .text('Facturé par', margins, 130)
+
+        doc.fontSize(10)
+           .font('Helvetica')
+           .text(organization.name, margins, 150)
+
+        if (organization.siret) {
+          doc.text(`SIRET: ${organization.siret}`, margins, 166)
+        }
+        if (organization.address) {
+          doc.text(organization.address, margins, 182)
+        }
+        if (organization.email) {
+          doc.text(`Email: ${organization.email}`, margins, 198)
+        }
+        if (organization.phone) {
+          doc.text(`Tél: ${organization.phone}`, margins, 214)
+        }
       }
-      if (data.company.email) {
-        doc.text(data.company.email, 350, 110)
+
+      // Infos client
+      doc.fontSize(11)
+         .font('Helvetica-Bold')
+         .text('Facturé à', pageWidth - 200, 130)
+
+      doc.fontSize(10)
+         .font('Helvetica')
+         .text(invoice.customer?.name || 'Client', pageWidth - 200, 150)
+
+      if (invoice.customer?.address) {
+        const addr = invoice.customer.address
+        if (typeof addr === 'object') {
+          if (addr.street) doc.text(addr.street, pageWidth - 200, 166)
+          if (addr.postal_code || addr.city) {
+            doc.text(`${addr.postal_code || ''} ${addr.city || ''}`, pageWidth - 200, 182)
+          }
+          if (addr.country) doc.text(addr.country, pageWidth - 200, 198)
+        } else if (typeof addr === 'string') {
+          doc.text(addr, pageWidth - 200, 166)
+        }
+      }
+      if (invoice.customer?.email) {
+        doc.text(`Email: ${invoice.customer.email}`, pageWidth - 200, 214)
       }
 
-      // Customer info
-      doc.text('Facturé à:', 50, 160)
-         .text(data.customer.name, 50, 175)
-         
-      if (data.customer.address) {
-        const addr = data.customer.address
-        const addressLines = [
-          addr.street,
-          `${addr.postal_code || ''} ${addr.city || ''}`,
-          addr.country
-        ].filter(Boolean)
-        
-        addressLines.forEach((line, index) => {
-          doc.text(line, 50, 190 + (index * 15))
-        })
-      }
+      // Tableau des articles
+      const tableTop = 250
+      const rowHeight = 25
+      const cellPadding = 8
 
-      // Items table
-      const tableTop = 280
-      const itemCodeX = 50
-      const descriptionX = 150
-      const quantityX = 350
-      const priceX = 400
-      const amountX = 470
+      // Headers
+      doc.fontSize(10)
+         .font('Helvetica-Bold')
+         .fillColor('#f0f0f0')
+         .rect(margins, tableTop, pageWidth - 2 * margins, rowHeight)
+         .fill()
 
-      // Table headers
-      doc.text('Code', itemCodeX, tableTop)
-         .text('Description', descriptionX, tableTop)
-         .text('Qté', quantityX, tableTop)
-         .text('Prix HT', priceX, tableTop)
-         .text('Total HT', amountX, tableTop)
+      doc.fillColor('#000000')
+         .text('Description', margins + cellPadding, tableTop + cellPadding, { width: 200 })
+         .text('Quantité', margins + 220, tableTop + cellPadding, { width: 60, align: 'right' })
+         .text('Prix unitaire', margins + 300, tableTop + cellPadding, { width: 70, align: 'right' })
+         .text('TVA', margins + 390, tableTop + cellPadding, { width: 40, align: 'right' })
+         .text('Total HT', margins + 450, tableTop + cellPadding, { width: 60, align: 'right' })
 
-      // Draw line under headers
-      doc.moveTo(50, tableTop + 15)
-         .lineTo(550, tableTop + 15)
-         .stroke()
+      let currentY = tableTop + rowHeight
 
-      let y = tableTop + 30
+      // Lignes articles
+      doc.fontSize(9)
+         .font('Helvetica')
 
-      // Items
-      data.items.forEach((item, index) => {
-        const total = item.qty * item.unit_price
-        
-        doc.text(String(index + 1), itemCodeX, y)
-           .text(item.label, descriptionX, y, { width: 180 })
-           .text(String(item.qty), quantityX, y)
-           .text(`${item.unit_price.toFixed(2)} €`, priceX, y)
-           .text(`${total.toFixed(2)} €`, amountX, y)
-           
-        y += 20
+      items.forEach((item, index) => {
+        const rowTotal = item.qty * item.unit_price
+        const rowVat = rowTotal * ((item.vat_rate || 20) / 100)
+
+        doc.text(item.label, margins + cellPadding, currentY + cellPadding, { width: 200 })
+           .text(String(item.qty), margins + 220, currentY + cellPadding, { width: 60, align: 'right' })
+           .text(`${item.unit_price.toFixed(2)} €`, margins + 300, currentY + cellPadding, { width: 70, align: 'right' })
+           .text(`${(item.vat_rate || 20)}%`, margins + 390, currentY + cellPadding, { width: 40, align: 'right' })
+           .text(`${rowTotal.toFixed(2)} €`, margins + 450, currentY + cellPadding, { width: 60, align: 'right' })
+
+        // Ligne de séparation
+        doc.moveTo(margins, currentY + rowHeight).lineTo(pageWidth - margins, currentY + rowHeight).stroke()
+        currentY += rowHeight
       })
 
-      // Totals
-      const totalsX = 400
-      y += 20
+      // Totaux
+      const totalY = currentY + 15
+      const totalBoxX = margins + 350
 
-      doc.text(`Total HT: ${data.total_ht.toFixed(2)} €`, totalsX, y)
-         .text(`TVA (20%): ${data.vat.toFixed(2)} €`, totalsX, y + 15)
-         .fontSize(12)
-         .text(`Total TTC: ${data.total_ttc.toFixed(2)} €`, totalsX, y + 35)
+      doc.fontSize(10)
+         .font('Helvetica')
+         .text('Sous-total:', totalBoxX, totalY)
+         .text(`${invoice.total_ht.toFixed(2)} €`, pageWidth - margins - 60, totalY, { align: 'right' })
 
-      // Footer
+      doc.text('TVA (20%):', totalBoxX, totalY + 20)
+         .text(`${invoice.vat.toFixed(2)} €`, pageWidth - margins - 60, totalY + 20, { align: 'right' })
+
+      doc.fontSize(12)
+         .font('Helvetica-Bold')
+         .fillColor('#667eea')
+         .text('TOTAL TTC:', totalBoxX, totalY + 45)
+         .fillColor('#000000')
+         .text(`${invoice.total_ttc.toFixed(2)} €`, pageWidth - margins - 60, totalY + 45, { align: 'right' })
+
+      // Conditions de paiement (footer)
+      const footerY = pageHeight - 100
+
+      doc.fontSize(9)
+         .font('Helvetica')
+         .fillColor('#666666')
+         .text('Conditions de paiement', margins, footerY, { underline: true })
+         .text('• Délai de paiement: 30 jours net', margins, footerY + 15)
+         .text('• Escompte de 2% pour paiement à 10 jours', margins, footerY + 30)
+         .text('• En cas de retard: pénalités légales + intérêts', margins, footerY + 45)
+
+      // Numéro de page
       doc.fontSize(8)
-         .text('Conditions de paiement: 30 jours net', 50, 700)
-         .text('En cas de retard de paiement, des pénalités de retard seront appliquées.', 50, 715)
+         .fillColor('#999999')
+         .text('Facture générée par SimplRH - www.simplrh.com', margins, pageHeight - 20, { align: 'center' })
 
       doc.end()
     } catch (error) {
       reject(error)
     }
   })
+}
+
+function getStatusLabel(status: string): string {
+  const labels: { [key: string]: string } = {
+    'draft': 'Brouillon',
+    'sent': 'Envoyée',
+    'paid': 'Payée',
+    'overdue': 'En retard',
+    'partially_paid': 'Partiellement payée'
+  }
+  return labels[status] || status
 }
 
 export function generateDocumentPDF(templateKey: string, payload: Record<string, any>): Promise<Buffer> {
