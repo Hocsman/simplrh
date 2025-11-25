@@ -74,7 +74,7 @@ export function Footer() {
             <div className="space-y-3 mb-6">
               <div className="flex items-center gap-3">
                 <Mail className="h-4 w-4 text-blue-400" />
-                <span className="text-gray-300">contact@simplrh.fr</span>
+                <span className="text-gray-300">contact@simplrh.com</span>
               </div>
               <div className="flex items-center gap-3">
                 <Phone className="h-4 w-4 text-blue-400" />

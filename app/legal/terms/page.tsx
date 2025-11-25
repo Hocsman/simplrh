@@ -71,7 +71,7 @@ export default function TermsPage() {
                 <p><strong>SIRET :</strong> 12345678901234</p>
                 <p><strong>TVA :</strong> FR12345678901</p>
                 <p><strong>Adresse :</strong> 123 Rue de la Tech, 75001 Paris, France</p>
-                <p><strong>Email :</strong> contact@simplrh.fr</p>
+                <p><strong>Email :</strong> contact@simplrh.com</p>
                 <p><strong>Directeur de publication :</strong> Jean Dupont</p>
                 <p><strong>Hébergeur :</strong> Supabase Inc. (États-Unis) - Données hébergées en France</p>
               </div>
@@ -274,7 +274,7 @@ export default function TermsPage() {
               </p>
               <div className="mt-4 p-4 bg-blue-50 rounded-lg">
                 <p className="text-blue-800 text-sm">
-                  Pour toute question juridique : <strong>legal@simplrh.fr</strong>
+                  Pour toute question juridique : <strong>legal@simplrh.com</strong>
                 </p>
               </div>
             </CardContent>
