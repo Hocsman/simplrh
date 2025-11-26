@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
 
     console.log('PDF generated successfully, size:', pdfBuffer.length, 'bytes')
 
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': 'attachment; filename="test.pdf"'
