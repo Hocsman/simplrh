@@ -389,7 +389,7 @@ export async function generateInvoicePDFWithPdfLib(data: PDFInvoiceData): Promis
       y: totalY - 45,
       size: 12,
       font: fontBold,
-      color: rgb(102, 126, 234), // Blue color
+      color: rgb(0.4, 0.49, 0.92), // Blue: rgb(102, 126, 234)
     })
     page.drawText(`${totalTTC.toFixed(2)} €`, {
       x: pageWidth - margins - 60,
@@ -406,28 +406,28 @@ export async function generateInvoicePDFWithPdfLib(data: PDFInvoiceData): Promis
       y: footerY,
       size: 9,
       font,
-      color: rgb(102, 102, 102),
+      color: rgb(0.4, 0.4, 0.4), // Gray: 102/255
     })
     page.drawText('• Délai de paiement: 30 jours net', {
       x: margins,
       y: footerY - 15,
       size: 9,
       font,
-      color: rgb(102, 102, 102),
+      color: rgb(0.4, 0.4, 0.4),
     })
     page.drawText('• Escompte de 2% pour paiement à 10 jours', {
       x: margins,
       y: footerY - 30,
       size: 9,
       font,
-      color: rgb(102, 102, 102),
+      color: rgb(0.4, 0.4, 0.4),
     })
     page.drawText('• En cas de retard: pénalités légales + intérêts', {
       x: margins,
       y: footerY - 45,
       size: 9,
       font,
-      color: rgb(102, 102, 102),
+      color: rgb(0.4, 0.4, 0.4),
     })
 
     // Page number
@@ -436,7 +436,7 @@ export async function generateInvoicePDFWithPdfLib(data: PDFInvoiceData): Promis
       y: 20,
       size: 8,
       font,
-      color: rgb(153, 153, 153),
+      color: rgb(0.6, 0.6, 0.6), // Gray: 153/255
     })
 
     // Save to buffer
