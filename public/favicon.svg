@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <!-- Background -->
+  <rect width="256" height="256" fill="#2563eb"/>
+  
+  <!-- Rounded rectangle for modern look -->
+  <rect x="20" y="20" width="216" height="216" rx="40" fill="#1d4ed8"/>
+  
+  <!-- Stylized 'S' -->
+  <text x="128" y="170" font-size="140" font-weight="bold" text-anchor="middle" font-family="Arial, sans-serif" fill="#ffffff">S</text>
+</svg>
