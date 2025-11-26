@@ -26,8 +26,19 @@ export async function GET(
       .single()
 
     if (fetchError || !invoice) {
+      console.error('Invoice fetch error:', fetchError)
       return ApiError.notFound('Facture non trouvée')
     }
+
+    console.log('Invoice data structure:', {
+      id: invoice.id,
+      number: invoice.number,
+      hasCustomer: !!invoice.customer,
+      customerKeys: invoice.customer ? Object.keys(invoice.customer) : [],
+      hasItems: !!invoice.items,
+      itemsCount: invoice.items?.length || 0,
+      invoiceKeys: Object.keys(invoice)
+    })
 
     // Récupérer les infos de l'organisation
     const { data: org, error: orgError } = await supabase
