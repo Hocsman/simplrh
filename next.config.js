@@ -29,6 +29,12 @@ const nextConfig = {
 
   // Webpack optimizations
   webpack: (config, { isServer }) => {
+    // Ensure PDFKit data files are included in the bundle
+    if (isServer) {
+      config.externals.push({
+        '@pdfkit/data': '@pdfkit/data',
+      })
+    }
     return config
   },
 

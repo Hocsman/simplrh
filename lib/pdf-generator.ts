@@ -18,7 +18,12 @@ export function generateInvoicePDF(data: PDFInvoiceData): Promise<Buffer> {
         return reject(err)
       }
 
-      const doc = new PDFDocument({ margin: 40, size: 'A4' })
+      // Configure PDFKit to use standard fonts (no file system access needed)
+      const doc = new PDFDocument({
+        margin: 40,
+        size: 'A4',
+        bufferPages: true
+      })
       const chunks: Buffer[] = []
 
       doc.on('data', (chunk: Buffer) => {
@@ -46,12 +51,12 @@ export function generateInvoicePDF(data: PDFInvoiceData): Promise<Buffer> {
 
       // En-tête - Titre facture
       doc.fontSize(24)
-      doc.font('Helvetica-Bold')
+      doc.font('Helvetica-Bold') // Built-in font, no files needed
       doc.text('FACTURE', margins, 40, { width: 200 })
 
       // Infos facture (droite)
       doc.fontSize(10)
-      doc.font('Helvetica')
+      doc.font('Helvetica') // Built-in font
       doc.text(`N° ${invoice.number}`, pageWidth - 200, 45)
       doc.text(`Date: ${new Date(invoice.created_at).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })}`, pageWidth - 200, 60)
 

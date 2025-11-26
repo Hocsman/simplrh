@@ -20,6 +20,8 @@ coverage
 db/seed.sql
 db/migrations/*.sql
 
+# Note: Do NOT ignore node_modules/@pdfkit/data - needed for PDF generation fonts
+
 # Documentation
 docs
 *.md
