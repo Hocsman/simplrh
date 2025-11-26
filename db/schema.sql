@@ -34,6 +34,9 @@ CREATE TABLE orgs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name TEXT NOT NULL,
     siret TEXT,
+    email TEXT,
+    address TEXT,
+    phone TEXT,
     billing_plan TEXT DEFAULT 'starter' CHECK (billing_plan IN ('starter', 'business', 'suite')),
     modules JSONB DEFAULT '{"billing": true, "people": true, "docs": true}'::jsonb,
     owner_id UUID NOT NULL REFERENCES users(id),
@@ -72,6 +75,9 @@ CREATE TABLE customers (
     name TEXT NOT NULL,
     email TEXT,
     address JSONB DEFAULT '{}'::jsonb,
+    phone TEXT,
+    siret TEXT,
+    vat_number TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
