@@ -11,6 +11,11 @@ export interface PDFInvoiceData {
 export function generateInvoicePDF(data: PDFInvoiceData): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     try {
+      // Validate input data
+      if (!data || !data.invoice) {
+        return reject(new Error('Invoice data is required'))
+      }
+
       const doc = new PDFDocument({ margin: 40, size: 'A4' })
       const chunks: Buffer[] = []
 
@@ -123,13 +128,18 @@ export function generateInvoicePDF(data: PDFInvoiceData): Promise<Buffer> {
       doc.fontSize(9)
       doc.font('Helvetica')
 
-      items.forEach((item, index) => {
-        const rowTotal = item.qty * item.unit_price
+      const itemsToRender = items || []
+      itemsToRender.forEach((item, index) => {
+        if (!item) return // Skip null/undefined items
+
+        const qty = item.qty || 0
+        const unitPrice = item.unit_price || 0
+        const rowTotal = qty * unitPrice
         const rowVat = rowTotal * ((item.vat_rate || 20) / 100)
 
-        doc.text(item.label, margins + cellPadding, currentY + cellPadding, { width: 200 })
-        doc.text(String(item.qty), margins + 220, currentY + cellPadding, { width: 60 })
-        doc.text(`${item.unit_price.toFixed(2)} €`, margins + 300, currentY + cellPadding, { width: 70 })
+        doc.text(item.label || 'Article', margins + cellPadding, currentY + cellPadding, { width: 200 })
+        doc.text(String(qty), margins + 220, currentY + cellPadding, { width: 60 })
+        doc.text(`${unitPrice.toFixed(2)} €`, margins + 300, currentY + cellPadding, { width: 70 })
         doc.text(`${(item.vat_rate || 20)}%`, margins + 390, currentY + cellPadding, { width: 40 })
         doc.text(`${rowTotal.toFixed(2)} €`, margins + 450, currentY + cellPadding, { width: 60 })
 
@@ -145,17 +155,20 @@ export function generateInvoicePDF(data: PDFInvoiceData): Promise<Buffer> {
       doc.fontSize(10)
       doc.font('Helvetica')
       doc.text('Sous-total:', totalBoxX, totalY)
-      doc.text(`${invoice.total_ht.toFixed(2)} €`, pageWidth - margins - 60, totalY)
+      const totalHT = invoice.total_ht || 0
+      doc.text(`${totalHT.toFixed(2)} €`, pageWidth - margins - 60, totalY)
 
       doc.text('TVA (20%):', totalBoxX, totalY + 20)
-      doc.text(`${invoice.vat.toFixed(2)} €`, pageWidth - margins - 60, totalY + 20)
+      const vat = invoice.vat || 0
+      doc.text(`${vat.toFixed(2)} €`, pageWidth - margins - 60, totalY + 20)
 
       doc.fontSize(12)
       doc.font('Helvetica-Bold')
       doc.fillColor('#667eea')
       doc.text('TOTAL TTC:', totalBoxX, totalY + 45)
       doc.fillColor('#000000')
-      doc.text(`${invoice.total_ttc.toFixed(2)} €`, pageWidth - margins - 60, totalY + 45)
+      const totalTTC = invoice.total_ttc || 0
+      doc.text(`${totalTTC.toFixed(2)} €`, pageWidth - margins - 60, totalY + 45)
 
       // Conditions de paiement (footer)
       const footerY = pageHeight - 100
