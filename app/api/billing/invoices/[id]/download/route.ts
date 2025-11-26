@@ -42,23 +42,32 @@ export async function GET(
 
     // Générer le PDF
     try {
+      console.log('Starting PDF generation for invoice:', id)
       const pdfBuffer = await generateInvoicePDF({
         invoice,
         organization: org,
         items: invoice.items || []
       })
 
+      console.log('PDF buffer generated, size:', pdfBuffer?.length, 'bytes')
+      if (!pdfBuffer) {
+        throw new Error('PDF buffer is empty or null')
+      }
+
       // Retourner le PDF en téléchargement
-      return new NextResponse(new Uint8Array(pdfBuffer), {
+      const response = new NextResponse(new Uint8Array(pdfBuffer), {
         headers: {
           'Content-Type': 'application/pdf',
           'Content-Disposition': `attachment; filename="${invoice.number}.pdf"`,
           'Cache-Control': 'no-cache, no-store, must-revalidate'
         }
       })
+      console.log('PDF response created successfully')
+      return response
     } catch (error: any) {
       console.error('PDF generation error:', error)
-      return ApiError.internal('Erreur lors de la génération du PDF')
+      console.error('Error details:', error.message, error.stack)
+      return ApiError.internal(`Erreur lors de la génération du PDF: ${error.message}`)
     }
   })
 }

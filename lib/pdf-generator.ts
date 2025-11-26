@@ -13,21 +13,31 @@ export function generateInvoicePDF(data: PDFInvoiceData): Promise<Buffer> {
     try {
       // Validate input data
       if (!data || !data.invoice) {
-        return reject(new Error('Invoice data is required'))
+        const err = new Error('Invoice data is required')
+        console.error('PDF generation failed:', err)
+        return reject(err)
       }
 
       const doc = new PDFDocument({ margin: 40, size: 'A4' })
       const chunks: Buffer[] = []
 
-      doc.on('data', (chunk: Buffer) => chunks.push(chunk))
+      doc.on('data', (chunk: Buffer) => {
+        chunks.push(chunk)
+      })
       doc.on('end', () => {
         try {
-          resolve(Buffer.concat(chunks))
+          const buffer = Buffer.concat(chunks)
+          console.log('PDF generated successfully, size:', buffer.length, 'bytes')
+          resolve(buffer)
         } catch (e) {
+          console.error('Error concatenating PDF chunks:', e)
           reject(e)
         }
       })
-      doc.on('error', reject)
+      doc.on('error', (err) => {
+        console.error('PDF document error:', err)
+        reject(err)
+      })
 
       const { invoice, organization, items } = data
       const pageWidth = doc.page.width
@@ -186,8 +196,11 @@ export function generateInvoicePDF(data: PDFInvoiceData): Promise<Buffer> {
       doc.fillColor('#999999')
       doc.text('Facture générée par SimplRH - www.simplrh.com', margins, pageHeight - 20, { width: 500 })
 
+      console.log('About to end PDF document generation')
       doc.end()
+      console.log('PDF document.end() called successfully')
     } catch (error) {
+      console.error('Error during PDF generation:', error)
       reject(error)
     }
   })
