@@ -10,8 +10,7 @@ import { Footer } from '@/components/marketing/Footer'
 import { generateMetadata, generateStructuredData } from '@/lib/seo'
 
 export const metadata = generateMetadata({
-  title: 'Accueil',
-  canonical: '/'
+  title: 'Accueil'
 })
 
 export default function HomePage() {

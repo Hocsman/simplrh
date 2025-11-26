@@ -14,15 +14,13 @@ import { CheckCircle, AlertCircle, Eye, EyeOff, Building, Mail, Lock, User } fro
 interface SignupDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSwitchToLogin?: () => void
 }
 
-export function SignupDialog({ open, onOpenChange, onSwitchToLogin }: SignupDialogProps) {
+export function SignupDialog({ open, onOpenChange }: SignupDialogProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-
 
   const {
     register,
@@ -38,18 +36,14 @@ export function SignupDialog({ open, onOpenChange, onSwitchToLogin }: SignupDial
     setError(null)
 
     try {
-      // Vérifier si Supabase est configuré
-      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL === 'https://your-project.supabase.co') {
-        throw new Error('Configuration Supabase manquante. Veuillez configurer vos variables d\'environnement.')
-      }
-
       const supabase = createClient()
       const { error: signupError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: {
           data: {
-            full_name: data.full_name
+            full_name: data.fullName,
+            company_name: data.company
           }
         }
       })
@@ -66,7 +60,6 @@ export function SignupDialog({ open, onOpenChange, onSwitchToLogin }: SignupDial
       }, 2000)
 
     } catch (err: any) {
-      console.error('Signup error:', err)
       setError(err.message || 'Une erreur est survenue lors de l\'inscription')
     } finally {
       setIsLoading(false)
@@ -133,17 +126,34 @@ export function SignupDialog({ open, onOpenChange, onSwitchToLogin }: SignupDial
             <div className="relative">
               <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
-                {...register('full_name')}
+                {...register('fullName')}
                 placeholder="John Doe"
                 className="pl-10"
                 disabled={isLoading}
               />
             </div>
-            {errors.full_name && (
-              <p className="text-red-500 text-sm mt-1">{errors.full_name.message}</p>
+            {errors.fullName && (
+              <p className="text-red-500 text-sm mt-1">{errors.fullName.message}</p>
             )}
           </div>
 
+          {/* Company Name */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Nom de l'entreprise
+            </label>
+            <div className="relative">
+              <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />              <Input
+                {...register('company')}
+                placeholder="Ma Super Entreprise"
+                className="pl-10"
+                disabled={isLoading}
+              />
+            </div>
+            {errors.company && (
+              <p className="text-red-500 text-sm mt-1">{errors.company.message}</p>
+            )}
+          </div>
 
           {/* Email */}
           <div>
@@ -223,7 +233,7 @@ export function SignupDialog({ open, onOpenChange, onSwitchToLogin }: SignupDial
               type="button"
               onClick={() => {
                 handleClose()
-                onSwitchToLogin?.()
+                // Open login dialog - this would be passed as a prop
               }}
               className="text-blue-600 hover:underline font-medium"
             >

@@ -7,8 +7,7 @@ import { generateMetadata } from '@/lib/seo'
 
 export const metadata = generateMetadata({
   title: 'Tarifs',
-  description: 'Choisissez le plan SimplRH adapté à votre entreprise. À partir de 29€/mois, sans engagement. Essai gratuit 14 jours.',
-  canonical: '/pricing'
+  description: 'Choisissez le plan SimplRH adapté à votre entreprise. À partir de 29€/mois, sans engagement. Essai gratuit 14 jours.'
 })
 
 export default function PricingPage() {

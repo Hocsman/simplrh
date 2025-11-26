@@ -13,15 +13,13 @@ import { AlertCircle, Eye, EyeOff, Mail, Lock, ArrowRight } from 'lucide-react'
 interface LoginDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSwitchToSignup?: () => void
 }
 
-export function LoginDialog({ open, onOpenChange, onSwitchToSignup }: LoginDialogProps) {
+export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [resetSent, setResetSent] = useState(false)
-
 
   const {
     register,
@@ -38,11 +36,6 @@ export function LoginDialog({ open, onOpenChange, onSwitchToSignup }: LoginDialo
     setError(null)
 
     try {
-      // Vérifier si Supabase est configuré
-      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL === 'https://your-project.supabase.co') {
-        throw new Error('Configuration Supabase manquante. Veuillez configurer vos variables d\'environnement.')
-      }
-
       const supabase = createClient()
       
       const { error: loginError } = await supabase.auth.signInWithPassword({
@@ -58,13 +51,8 @@ export function LoginDialog({ open, onOpenChange, onSwitchToSignup }: LoginDialo
       window.location.href = '/dashboard'
 
     } catch (err: any) {
-      console.error('Login error:', err) // Debug log
       if (err.message.includes('Invalid login credentials')) {
         setError('Email ou mot de passe incorrect')
-      } else if (err.message.includes('Email not confirmed')) {
-        setError('Veuillez confirmer votre email avant de vous connecter')
-      } else if (err.status === 400) {
-        setError('Email ou mot de passe incorrect. Vérifiez vos identifiants.')
       } else {
         setError(err.message || 'Une erreur est survenue lors de la connexion')
       }
@@ -220,7 +208,7 @@ export function LoginDialog({ open, onOpenChange, onSwitchToSignup }: LoginDialo
                 type="button"
                 onClick={() => {
                   handleClose()
-                  onSwitchToSignup?.()
+                  // Open signup dialog - this would be passed as a prop
                 }}
                 className="text-blue-600 hover:underline font-medium"
               >

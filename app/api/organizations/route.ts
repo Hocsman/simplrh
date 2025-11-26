@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createOrganizationSchema } from '@/lib/validators'
 
 export async function POST(request: NextRequest) {
   console.log('🚀 Organization API called')

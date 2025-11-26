@@ -27,8 +27,7 @@ import {
 
 export const metadata = generateMetadata({
   title: 'Fonctionnalités',
-  description: 'Découvrez toutes les fonctionnalités de SimplRH : facturation Factur-X, gestion RH, génération de documents juridiques et bien plus.',
-  canonical: '/features'
+  description: 'Découvrez toutes les fonctionnalités de SimplRH : facturation Factur-X, gestion RH, génération de documents juridiques et bien plus.'
 })
 
 const billingFeatures = [
