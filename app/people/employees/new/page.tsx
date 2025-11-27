@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation'
 import { requireOrganization } from '@/domains/core/auth'
 import { EmployeeForm } from '@/components/employees/EmployeeForm'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata = {
   title: 'Nouvel employé | SimplRH',
   description: 'Ajouter un nouvel employé à votre organisation'
