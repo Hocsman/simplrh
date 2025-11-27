@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { Pricing } from '@/components/marketing/Pricing'
 import { FAQ } from '@/components/marketing/FAQ'
 import { CTA } from '@/components/marketing/CTA'

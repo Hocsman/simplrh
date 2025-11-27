@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { Header } from '@/components/marketing/Header'
 import { Footer } from '@/components/marketing/Footer'
 import { CTA } from '@/components/marketing/CTA'

@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { redirect } from 'next/navigation'
 import { requireOrganization } from '@/domains/core/auth'
 import { getEmployee } from '@/domains/people/employees'
