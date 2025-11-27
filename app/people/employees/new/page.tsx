@@ -1,5 +1,8 @@
 import { redirect } from 'next/navigation'
 import { requireOrganization } from '@/domains/core/auth'
+import { createEmployee as createEmployeeDb } from '@/domains/people/employees'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import { EmployeeFormWrapper } from './employee-form-wrapper'
 
 export const dynamic = 'force-dynamic'
@@ -13,25 +16,29 @@ async function createEmployee(formData: any) {
   'use server'
 
   try {
-    // Ensure user is authenticated by checking organization
-    await requireOrganization()
+    const org = await requireOrganization()
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
+        },
+      }
+    )
 
-    // Call the API endpoint to create the employee
-    // This uses the authenticated session and respects RLS policies
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/people/employees`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(formData),
-    })
-
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error || 'Erreur lors de la création de l\'employé')
+    // Get current user to verify authentication
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) {
+      throw new Error('Non authentifié')
     }
 
-    const { employee } = await response.json()
+    // Call the domain function to create the employee
+    // Uses service role key so it can insert without RLS restrictions
+    const employee = await createEmployeeDb(org.id, formData, user.id)
     redirect(`/people/employees/${employee.id}`)
   } catch (error: any) {
     console.error('Error creating employee:', error)
