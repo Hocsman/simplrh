@@ -142,8 +142,12 @@ CREATE TABLE employees (
     user_id UUID REFERENCES users(id),
     full_name TEXT NOT NULL,
     email TEXT,
+    position TEXT,
     team_id UUID,
     hire_date DATE,
+    salary NUMERIC(10,2),
+    contract_type TEXT DEFAULT 'CDI' CHECK (contract_type IN ('CDI', 'CDD', 'Stage', 'Freelance')),
+    status TEXT DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'on_leave')),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
