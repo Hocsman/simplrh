@@ -1,12 +1,14 @@
 'use client'
 
-import Link from 'next/link'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ArrowRight, CheckCircle, Zap, Users, Star } from 'lucide-react'
+import { SignupDialog } from '@/components/marketing/SignupDialog'
 
 export function CTA() {
+  const [isSignupOpen, setIsSignupOpen] = useState(false)
 
   return (
     <>
@@ -60,24 +62,24 @@ export function CTA() {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <Link href="/auth/signup">
-                <Button 
-                  size="lg"
-                  className="bg-white text-blue-600 hover:bg-gray-100 text-lg px-8 py-4 h-auto group shadow-xl"
-                >
-                  Commencer maintenant
-                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
-              <Link href="/features">
-                <Button 
-                  size="lg"
-                  variant="outline"
-                  className="border-white/30 text-white hover:bg-white/10 text-lg px-8 py-4 h-auto backdrop-blur-sm"
-                >
-                  Voir la démo
-                </Button>
-              </Link>
+              <Button 
+                size="lg"
+                onClick={() => setIsSignupOpen(true)}
+                className="bg-white text-blue-600 hover:bg-gray-100 text-lg px-8 py-4 h-auto group shadow-xl"
+              >
+                Commencer maintenant
+                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              </Button>
+              <Button 
+                size="lg"
+                variant="outline"
+                className="border-white/30 text-white hover:bg-white/10 text-lg px-8 py-4 h-auto backdrop-blur-sm"
+                onClick={() => {
+                  document.getElementById('product-tour')?.scrollIntoView({ behavior: 'smooth' })
+                }}
+              >
+                Voir la démo
+              </Button>
             </div>
 
             {/* Social Proof */}
@@ -126,6 +128,7 @@ export function CTA() {
         </div>
       </section>
 
+      <SignupDialog open={isSignupOpen} onOpenChange={setIsSignupOpen} />
     </>
   )
 }

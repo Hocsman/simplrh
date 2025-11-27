@@ -1,10 +1,10 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import { Toaster } from '@/components/ui/toaster'
+import { generateMetadata } from '@/lib/seo'
 import { CookieConsent } from '@/components/CookieConsent'
 import { CookieErrorSuppressor } from '@/components/CookieErrorSuppressor'
-import { generateMetadata } from '@/lib/seo'
+import { Toaster } from '@/components/ui/toaster'
 
 const inter = Inter({ subsets: ['latin'] })
 

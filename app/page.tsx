@@ -9,6 +9,8 @@ import { CTA } from '@/components/marketing/CTA'
 import { Footer } from '@/components/marketing/Footer'
 import { generateMetadata, generateStructuredData } from '@/lib/seo'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata = generateMetadata({
   title: 'Accueil'
 })

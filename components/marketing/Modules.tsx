@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { 
@@ -137,14 +136,10 @@ export function Modules() {
 
                   {/* CTA */}
                   <div className="mt-6 pt-6 border-t">
-                    <Link href="/features" className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg transition-colors group ${
-                      module.color === 'blue' ? 'bg-blue-50 text-blue-700 hover:bg-blue-100' :
-                      module.color === 'green' ? 'bg-green-50 text-green-700 hover:bg-green-100' :
-                      'bg-purple-50 text-purple-700 hover:bg-purple-100'
-                    }`}>
+                    <button className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-${module.color}-50 text-${module.color}-700 hover:bg-${module.color}-100 transition-colors group`}>
                       En savoir plus
                       <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                    </Link>
+                    </button>
                   </div>
                 </CardContent>
               </Card>
