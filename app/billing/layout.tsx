@@ -1,10 +1,10 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { 
-  LayoutDashboard, 
-  CreditCard, 
-  Users, 
-  FileText, 
+import {
+  LayoutDashboard,
+  CreditCard,
+  Users,
+  FileText,
   Settings,
   LogOut,
   Receipt,
@@ -12,6 +12,8 @@ import {
   DollarSign,
   Bell
 } from 'lucide-react'
+
+export const dynamic = 'force-dynamic'
 
 export default function BillingLayout({
   children,
