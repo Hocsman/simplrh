@@ -62,9 +62,9 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     console.log('📝 Creating employee:', body)
-    
-    const { full_name, email, position, hire_date, salary, contract_type } = body
-    
+
+    const { full_name, email, position, hire_date, salary, contract_type, status } = body
+
     if (!full_name) {
       return NextResponse.json({ error: 'Le nom complet est requis' }, { status: 400 })
     }
@@ -74,10 +74,10 @@ export async function POST(request: NextRequest) {
       full_name: full_name.trim(),
       email: email && email.trim().length > 0 ? email.trim() : null,
       position: position && position.trim().length > 0 ? position.trim() : null,
-      hire_date: hire_date || new Date().toISOString().split('T')[0],
-      salary: salary || null,
+      hire_date: hire_date && hire_date.trim().length > 0 ? hire_date : null,
+      salary: salary && salary !== '' ? parseFloat(salary) : null,
       contract_type: contract_type || 'CDI',
-      status: 'active'
+      status: status || 'active'
     }
 
     const { data: employee, error } = await supabase

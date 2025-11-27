@@ -43,7 +43,17 @@ export function EmployeeForm({ initialData, onSubmit, isLoading = false }: Emplo
     }
 
     try {
-      await onSubmit(formData)
+      // Clean up empty strings to null for optional fields
+      const cleanData = {
+        full_name: formData.full_name,
+        email: formData.email || undefined,
+        position: formData.position || undefined,
+        hire_date: formData.hire_date || undefined,
+        salary: formData.salary ? parseFloat(formData.salary as any) : undefined,
+        contract_type: formData.contract_type || 'CDI',
+        status: formData.status || 'active'
+      }
+      await onSubmit(cleanData)
     } catch (err: any) {
       setError(err.message || 'Une erreur est survenue')
     }
