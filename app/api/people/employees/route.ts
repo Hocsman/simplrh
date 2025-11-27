@@ -72,13 +72,15 @@ export async function POST(request: NextRequest) {
     const employeeData: any = {
       org_id: member.org_id,
       full_name: full_name.trim(),
-      email: email && email.trim().length > 0 ? email.trim() : null,
-      position: position && position.trim().length > 0 ? position.trim() : null,
-      hire_date: hire_date && hire_date.trim().length > 0 ? hire_date : null,
-      salary: salary && salary !== '' ? parseFloat(salary) : null,
-      contract_type: contract_type || 'CDI',
-      status: status || 'active'
+      email: (email && typeof email === 'string' && email.trim().length > 0) ? email.trim() : null,
+      position: (position && typeof position === 'string' && position.trim().length > 0) ? position.trim() : null,
+      hire_date: (hire_date && typeof hire_date === 'string' && hire_date.trim().length > 0) ? hire_date : null,
+      salary: (salary && salary !== '' && salary !== null && salary !== undefined) ? Number(salary) : null,
+      contract_type: (contract_type && typeof contract_type === 'string') ? contract_type : 'CDI',
+      status: (status && typeof status === 'string') ? status : 'active'
     }
+
+    console.log('🔍 Final employeeData:', JSON.stringify(employeeData))
 
     const { data: employee, error } = await supabase
       .from('employees')
