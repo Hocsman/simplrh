@@ -1,8 +1,6 @@
 import { redirect } from 'next/navigation'
 import { requireOrganization } from '@/domains/core/auth'
-import { createEmployee as createEmployeeDb } from '@/domains/people/employees'
 import { EmployeeFormWrapper } from './employee-form-wrapper'
-import { createClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,17 +13,25 @@ async function createEmployee(formData: any) {
   'use server'
 
   try {
-    const org = await requireOrganization()
-    const supabase = await createClient()
+    // Ensure user is authenticated by checking organization
+    await requireOrganization()
 
-    // Get current user to verify authentication
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) {
-      throw new Error('Non authentifié')
+    // Call the API endpoint to create the employee
+    // This uses the authenticated session and respects RLS policies
+    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/people/employees`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formData),
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Erreur lors de la création de l\'employé')
     }
 
-    // Call the domain function directly with org context
-    const employee = await createEmployeeDb(org.id, formData, user.id)
+    const { employee } = await response.json()
     redirect(`/people/employees/${employee.id}`)
   } catch (error: any) {
     console.error('Error creating employee:', error)
