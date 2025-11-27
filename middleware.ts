@@ -9,7 +9,6 @@ export async function middleware(req: NextRequest) {
 
   // Check if Supabase is configured
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL === 'https://your-project.supabase.co') {
-    console.log('⚠️ Supabase non configuré - mode développement')
     return supabaseResponse
   }
 
@@ -32,7 +31,7 @@ export async function middleware(req: NextRequest) {
                 supabaseResponse.cookies.set(name, value, options)
               )
             } catch (error) {
-              console.error('Error setting cookies:', error)
+              // Silently ignore cookie errors
             }
           },
         },
@@ -43,57 +42,17 @@ export async function middleware(req: NextRequest) {
       data: { session },
     } = await supabase.auth.getSession()
 
-    // Protected routes that require authentication
-    const protectedPaths = ['/dashboard', '/billing', '/people', '/docs', '/settings', '/onboarding']
-    const authPaths = ['/auth/login', '/auth/signup']
+    const pathname = req.nextUrl.pathname
 
-    const isProtectedPath = protectedPaths.some(path => req.nextUrl.pathname.startsWith(path))
-    const isAuthPath = authPaths.some(path => req.nextUrl.pathname.startsWith(path))
-
-    // Redirect to login if accessing protected route without session
-    if (isProtectedPath && !session) {
-      const redirectUrl = new URL('/auth/login', req.url)
-      redirectUrl.searchParams.set('redirect', req.nextUrl.pathname)
-      return NextResponse.redirect(redirectUrl)
-    }
-
-    // Redirect to dashboard if accessing auth pages with session
-    if (isAuthPath && session) {
+    // Auth pages - redirect to dashboard if already logged in
+    if ((pathname.startsWith('/auth/login') || pathname.startsWith('/auth/signup')) && session) {
       return NextResponse.redirect(new URL('/dashboard', req.url))
     }
 
-    // Check if user has organization (except for onboarding page)
-    if (session && isProtectedPath && req.nextUrl.pathname !== '/onboarding') {
-      const { data: members } = await supabase
-        .from('members')
-        .select('org_id')
-        .eq('user_id', session.user.id)
-        .limit(1)
-
-      // If no organization, redirect to onboarding
-      if (!members || members.length === 0) {
-        console.log('📋 User has no organization, redirecting to onboarding')
-        return NextResponse.redirect(new URL('/onboarding', req.url))
-      }
-    }
-
-    // Special handling for onboarding
-    if (req.nextUrl.pathname === '/onboarding' && session) {
-      // Check if user already has an organization
-      const { data: members } = await supabase
-        .from('members')
-        .select('org_id')
-        .eq('user_id', session.user.id)
-        .limit(1)
-
-      if (members && members.length > 0) {
-        console.log('✅ User already has organization, redirecting to dashboard')
-        return NextResponse.redirect(new URL('/dashboard', req.url))
-      }
-    }
+    // Protected routes - let the page handle auth checks
+    // The pages will use requireOrganization() and handle redirects properly
   } catch (error) {
-    console.error('Middleware error:', error)
-    // Continue anyway on error
+    // Silently continue on any middleware errors
   }
 
   return supabaseResponse
