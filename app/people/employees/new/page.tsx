@@ -14,21 +14,22 @@ export const metadata = {
 async function createEmployee(formData: any) {
   'use server'
 
-  const org = await requireOrganization()
-  const supabase = await createClient()
-
-  // Get current user to verify authentication
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-  if (userError || !user) {
-    throw new Error('Non authentifié')
-  }
-
   try {
+    const org = await requireOrganization()
+    const supabase = await createClient()
+
+    // Get current user to verify authentication
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) {
+      throw new Error('Non authentifié')
+    }
+
     // Call the domain function directly with org context
     const employee = await createEmployeeDb(org.id, formData, user.id)
     redirect(`/people/employees/${employee.id}`)
   } catch (error: any) {
-    throw error
+    console.error('Error creating employee:', error)
+    throw new Error(error?.message || 'Erreur lors de la création de l\'employé')
   }
 }
 
