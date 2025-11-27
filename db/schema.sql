@@ -95,6 +95,7 @@ CREATE TABLE invoices (
     vat NUMERIC(10,2) DEFAULT 0,
     pdf_path TEXT,
     facturx_xml_path TEXT,
+    sent_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
