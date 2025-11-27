@@ -27,14 +27,8 @@ async function createEmployee(formData: any) {
 }
 
 export default async function NewEmployeePage() {
-  let org: any = null
-
-  try {
-    org = await requireOrganization()
-  } catch (error: any) {
-    // If no organization, redirect to onboarding
-    redirect('/onboarding')
-  }
+  // Check organization on render - will throw if not authenticated
+  await requireOrganization()
 
   return (
     <div className="space-y-8">
