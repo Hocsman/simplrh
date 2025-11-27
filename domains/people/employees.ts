@@ -85,27 +85,33 @@ export async function createEmployee(orgId: string, data: CreateEmployeeData, ac
 }
 
 export async function getEmployees(orgId: string) {
-  const cookieStore = cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
+  try {
+    const cookieStore = cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
         },
-      },
-    }
-  )
+      }
+    )
 
-  const { data, error } = await supabase
-    .from('employees')
-    .select('*')
-    .eq('org_id', orgId)
-    .order('full_name')
+    const { data, error } = await supabase
+      .from('employees')
+      .select('*')
+      .eq('org_id', orgId)
+      .order('full_name')
 
-  if (error) throw error
-  return data as Employee[]
+    if (error) throw error
+    return data as Employee[]
+  } catch (error: any) {
+    console.error('Error in getEmployees:', error)
+    // Return empty array if cookies/supabase fails
+    return []
+  }
 }
 
 export async function getEmployee(employeeId: string, orgId: string) {

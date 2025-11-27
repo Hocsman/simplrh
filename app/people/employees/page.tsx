@@ -12,10 +12,17 @@ export default async function EmployeesPage() {
 
   try {
     org = await requireOrganization()
-    employees = await getEmployees(org.id)
   } catch (error: any) {
     // If no organization, redirect to onboarding
     redirect('/onboarding')
+  }
+
+  try {
+    employees = await getEmployees(org.id)
+  } catch (error: any) {
+    // If fetching employees fails, just show empty list
+    console.error('Failed to fetch employees:', error)
+    employees = []
   }
 
   return <EmployeesPageContent initialEmployees={employees} />
