@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { requireOrganization } from '@/domains/core/auth'
 import { createEmployee as createEmployeeDb } from '@/domains/people/employees'
-import { EmployeeForm } from '@/components/employees/EmployeeForm'
+import { EmployeeFormWrapper } from './employee-form-wrapper'
 import { createClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
@@ -42,10 +42,6 @@ export default async function NewEmployeePage() {
     redirect('/onboarding')
   }
 
-  const handleSubmit = async (data: any) => {
-    await createEmployee(data)
-  }
-
   return (
     <div className="space-y-8">
       <div>
@@ -53,7 +49,7 @@ export default async function NewEmployeePage() {
         <p className="text-gray-600 mt-2">Ajouter un nouvel employé à votre organisation</p>
       </div>
 
-      <EmployeeForm onSubmit={handleSubmit} />
+      <EmployeeFormWrapper onSubmit={createEmployee} />
     </div>
   )
 }

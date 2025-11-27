@@ -1,4 +1,5 @@
-﻿import { Hero } from '@/components/marketing/Hero'
+﻿import { Header } from '@/components/marketing/Header'
+import { Hero } from '@/components/marketing/Hero'
 import { Benefits } from '@/components/marketing/Benefits'
 import { Modules } from '@/components/marketing/Modules'
 import { ProductTour } from '@/components/marketing/ProductTour'
@@ -26,8 +27,8 @@ export default function HomePage() {
           __html: JSON.stringify(structuredData)
         }}
       />
-      
-      
+
+      <Header />
       <main>
         <Hero />
         <Benefits />
