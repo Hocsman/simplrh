@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation'
 import { requireOrganization } from '@/domains/core/auth'
+import { createEmployee as createEmployeeDb } from '@/domains/people/employees'
 import { EmployeeForm } from '@/components/employees/EmployeeForm'
+import { createClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,22 +15,17 @@ async function createEmployee(formData: any) {
   'use server'
 
   const org = await requireOrganization()
+  const supabase = await createClient()
+
+  // Get current user to verify authentication
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) {
+    throw new Error('Non authentifié')
+  }
 
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/people/employees`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(formData),
-    })
-
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error || 'Erreur lors de la création')
-    }
-
-    const { employee } = await response.json()
+    // Call the domain function directly with org context
+    const employee = await createEmployeeDb(org.id, formData, user.id)
     redirect(`/people/employees/${employee.id}`)
   } catch (error: any) {
     throw error
