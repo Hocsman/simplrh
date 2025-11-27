@@ -1,8 +1,6 @@
 import { redirect } from 'next/navigation'
 import { requireOrganization } from '@/domains/core/auth'
 import { createEmployee as createEmployeeDb } from '@/domains/people/employees'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
 import { EmployeeFormWrapper } from './employee-form-wrapper'
 
 export const dynamic = 'force-dynamic'
@@ -17,28 +15,10 @@ async function createEmployee(formData: any) {
 
   try {
     const org = await requireOrganization()
-    const cookieStore = cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value
-          },
-        },
-      }
-    )
-
-    // Get current user to verify authentication
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) {
-      throw new Error('Non authentifié')
-    }
 
     // Call the domain function to create the employee
     // Uses service role key so it can insert without RLS restrictions
-    const employee = await createEmployeeDb(org.id, formData, user.id)
+    const employee = await createEmployeeDb(org.id, formData)
     redirect(`/people/employees/${employee.id}`)
   } catch (error: any) {
     console.error('Error creating employee:', error)
