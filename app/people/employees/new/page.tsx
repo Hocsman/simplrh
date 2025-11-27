@@ -36,7 +36,14 @@ async function createEmployee(formData: any) {
 }
 
 export default async function NewEmployeePage() {
-  const org = await requireOrganization()
+  let org: any = null
+
+  try {
+    org = await requireOrganization()
+  } catch (error: any) {
+    // If no organization, redirect to onboarding
+    redirect('/onboarding')
+  }
 
   const handleSubmit = async (data: any) => {
     await createEmployee(data)
