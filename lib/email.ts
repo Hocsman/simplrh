@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer'
+import { logger } from './logger'
 
 // Configuration du transporteur email
 const transporter = nodemailer.createTransport({
@@ -32,10 +33,10 @@ export async function sendEmail(options: EmailOptions) {
       attachments: options.attachments
     })
 
-    console.log('Email sent:', info.messageId)
+    logger.success('Email sent', { messageId: info.messageId })
     return { success: true, messageId: info.messageId }
   } catch (error) {
-    console.error('Email send error:', error)
+    logger.error('Email send error', error as Error)
     return { success: false, error: error.message }
   }
 }
@@ -81,9 +82,9 @@ export function generateInvoiceEmailHTML(invoiceNumber: string, customerName: st
 }
 
 export function generateLeaveRequestEmailHTML(
-  employeeName: string, 
-  type: string, 
-  startDate: string, 
+  employeeName: string,
+  type: string,
+  startDate: string,
   endDate: string,
   comment?: string
 ): string {

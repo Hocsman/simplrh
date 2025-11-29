@@ -1,24 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
-  console.log('🚀 Organization API called')
-  
+  logger.debug('Organization API called')
+
   try {
     const supabase = await createClient()
 
     // Get current user
-    console.log('🔍 Checking authentication...')
+    logger.debug('Checking authentication')
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     if (userError || !user) {
-      console.error('❌ Auth error:', userError)
+      logger.warn('Auth error in organization creation', { error: userError })
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
 
-    console.log('✅ User authenticated:', user.email, 'ID:', user.id)
+    logger.info(`User authenticated: ${user.email}`, { userId: user.id })
 
     // Ensure user exists in users table
-    console.log('👤 Ensuring user exists in users table...')
+    logger.debug('Ensuring user exists in users table')
     const { error: userUpsertError } = await supabase
       .from('users')
       .upsert({
@@ -28,31 +29,31 @@ export async function POST(request: NextRequest) {
       }, { onConflict: 'id' })
 
     if (userUpsertError) {
-      console.error('⚠️ User upsert error:', userUpsertError)
+      logger.warn('User upsert error', { error: userUpsertError })
     } else {
-      console.log('✅ User exists in users table')
+      logger.debug('User exists in users table')
     }
 
     // Parse body
     const body = await request.json()
-    console.log('📝 Raw body received:', JSON.stringify(body, null, 2))
-    
-    // Simple validation without Zod for debugging
+    logger.debug('Organization creation request', { name: body.name })
+
+    // Simple validation
     if (!body.name || typeof body.name !== 'string' || body.name.trim().length < 2) {
-      console.error('❌ Invalid name:', body.name)
+      logger.warn('Invalid organization name', { name: body.name })
       return NextResponse.json(
-        { error: 'Le nom de l\'organisation est requis (minimum 2 caractères)' },
+        { error: 'Le nom de l\'organization est requis (minimum 2 caractères)' },
         { status: 400 }
       )
     }
 
     const orgName = body.name.trim()
     const orgSiret = body.siret && body.siret.trim().length > 0 ? body.siret.trim() : null
-    
-    console.log('✅ Validation passed - Name:', orgName, 'SIRET:', orgSiret)
+
+    logger.debug('Validation passed', { name: orgName, siret: orgSiret })
 
     // Create organization
-    console.log('🏢 Creating organization in database...')
+    logger.info('Creating organization in database')
     const orgData = {
       name: orgName,
       siret: orgSiret,
@@ -64,8 +65,7 @@ export async function POST(request: NextRequest) {
         docs: true
       }
     }
-    console.log('📊 Org data to insert:', JSON.stringify(orgData, null, 2))
-    
+
     const { data: org, error: orgError } = await supabase
       .from('orgs')
       .insert(orgData)
@@ -73,14 +73,14 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (orgError) {
-      console.error('❌ Org creation error:', orgError)
+      logger.error('Organization creation error', orgError)
       throw orgError
     }
 
-    console.log('✅ Organization created:', org.id)
+    logger.success(`Organization created: ${org.id} - ${orgName}`)
 
     // Add owner as member
-    console.log('👤 Adding user as owner member...')
+    logger.debug('Adding user as owner member')
     const { error: memberError } = await supabase
       .from('members')
       .insert({
@@ -90,19 +90,20 @@ export async function POST(request: NextRequest) {
       })
 
     if (memberError) {
-      console.error('❌ Member creation error:', memberError)
+      logger.error('Member creation error', memberError)
       throw memberError
     }
 
-    console.log('✅ User added as owner')
-    console.log('🎉 Organization setup complete!')
+    logger.success(`Organization setup complete for ${orgName}`)
 
     return NextResponse.json(org, { status: 201 })
   } catch (error: any) {
-    console.error('❌ Organization creation error:', error)
-    console.error('Error stack:', error.stack)
+    logger.error('Organization creation failed', error, {
+      message: error.message,
+      code: error.code
+    })
     return NextResponse.json(
-      { 
+      {
         error: error.message || 'Failed to create organization',
         details: error.details || error.hint || 'Erreur inconnue',
         code: error.code
@@ -111,7 +112,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-
-
-
-
