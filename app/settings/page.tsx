@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { LogoutButton } from '@/components/LogoutButton'
 import {
   Building,
   CreditCard,
@@ -28,8 +29,7 @@ import {
   Briefcase,
   MapPin,
   FileText,
-  Settings,
-  LogOut
+  Settings
 } from 'lucide-react'
 
 export default function SettingsPage() {
@@ -50,10 +50,7 @@ export default function SettingsPage() {
             <h1 className="text-lg font-semibold text-gray-900">Paramètres de l'organisation</h1>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
-              <LogOut className="h-4 w-4 mr-2" />
-              Déconnexion
-            </Button>
+            <LogoutButton className="text-red-600 hover:text-red-700 hover:bg-red-50" />
           </div>
         </div>
       </header>
