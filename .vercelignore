@@ -14,22 +14,6 @@ coverage
 *.test.ts
 *.test.tsx
 *.spec.ts
-*.spec.tsx
-
-# Database
-db/seed.sql
-db/migrations/*.sql
-
-# Note: Do NOT ignore node_modules/@pdfkit/data - needed for PDF generation fonts
-
-# Documentation
-docs
-*.md
-!README.md
-
-# IDE
-.vscode
-.idea
 *.swp
 *.swo
 
