@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { logger } from '@/lib/logger'
 
 export interface User {
   id: string
@@ -65,9 +66,9 @@ export async function requireAuth() {
     const user = await getCurrentUser()
     if (user) return user
   } catch (error) {
-    console.log('⚠️ Mode développement : utilisation utilisateur mock')
+    logger.debug('Dev mode: using mock user')
   }
-  
+
   // Mode développement : retourner un utilisateur mock avec UUID valide
   return {
     id: '00000000-0000-0000-0000-000000000002',
@@ -121,7 +122,7 @@ export async function getUserOrganizations(userId: string) {
 export async function getCurrentOrganization() {
   const user = await requireAuth()
   const orgs = await getUserOrganizations(user.id)
-  
+
   // Pour simplifier, on prend la première org
   // En production, on gérerait un système de sélection d'org
   return orgs?.[0] || null
@@ -132,9 +133,9 @@ export async function requireOrganization() {
     const org = await getCurrentOrganization()
     if (org) return org
   } catch (error) {
-    console.log('⚠️ Mode développement : utilisation organisation mock')
+    logger.debug('Dev mode: using mock organization')
   }
-  
+
   // Mode développement : retourner une organisation mock avec UUID valide
   return {
     id: '00000000-0000-0000-0000-000000000001',
@@ -179,7 +180,7 @@ async function createDefaultOrganization(userId: string) {
     .single()
 
   if (orgError) {
-    console.error('Error creating default organization:', orgError)
+    logger.error('Error creating default organization', orgError)
     throw new Error('Failed to create default organization')
   }
 
@@ -193,7 +194,7 @@ async function createDefaultOrganization(userId: string) {
     })
 
   if (memberError) {
-    console.error('Error adding user as member:', memberError)
+    logger.error('Error adding user as member', memberError)
     throw new Error('Failed to add user as member')
   }
 
@@ -216,9 +217,9 @@ export async function hasPermission(
   }
 
   const userPermissions = permissions[userRole] || []
-  
+
   if (userPermissions.includes('*')) return true
-  
+
   const fullPermission = `${resource}.${action}`
   return userPermissions.includes(fullPermission)
 }
