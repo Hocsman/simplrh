@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
-import { getAuthContext, ApiError, ApiSuccess, withErrorHandling, validateRequired } from '@/lib/api-utils'
+import { getAuthContext, ApiError, ApiSuccess, withErrorHandling } from '@/lib/api-utils'
+import { logger } from '@/lib/logger'
 
 // GET - Récupérer toutes les factures de l'organisation
 export async function GET() {
@@ -17,11 +18,11 @@ export async function GET() {
       .order('created_at', { ascending: false })
 
     if (fetchError) {
-      console.error('Error fetching invoices:', fetchError)
+      logger.error('Error fetching invoices', fetchError)
       return ApiError.internal('Erreur lors de la récupération des factures')
     }
 
-    console.log(`✅ Found ${invoices?.length || 0} invoices`)
+    logger.info(`Found ${invoices?.length || 0} invoices for org ${orgId}`)
     return ApiSuccess.ok({ invoices: invoices || [] })
   })
 }
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
     if (error) return error
 
     const body = await request.json()
-    console.log('📝 Creating invoice with data:', body)
+    logger.debug('Creating invoice', { data: body })
 
     const { customer_id, due_date, items } = body
 
@@ -74,11 +75,11 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (invoiceError) {
-      console.error('❌ Invoice creation error:', invoiceError)
+      logger.error('Invoice creation error', invoiceError)
       return ApiError.internal('Erreur lors de la création de la facture')
     }
 
-    console.log('✅ Invoice created:', invoice.id)
+    logger.success(`Invoice created: ${invoice.id} - ${invoiceNumber}`)
 
     // Create invoice items
     const invoiceItems = items.map((item: any) => ({
@@ -94,11 +95,11 @@ export async function POST(request: NextRequest) {
       .insert(invoiceItems)
 
     if (itemsError) {
-      console.error('❌ Items creation error:', itemsError)
+      logger.error('Items creation error', itemsError)
       return ApiError.internal('Erreur lors de la création des items')
     }
 
-    console.log('✅ Invoice items created')
+    logger.info(`Invoice items created for ${invoice.id}`)
 
     return ApiSuccess.created({
       invoice,

@@ -15,6 +15,7 @@
     "db:reset": "supabase db reset",
     "db:generate-types": "supabase gen types typescript --local > lib/supabase/types.ts",
     "test": "echo \"No tests specified\" && exit 0",
+    "test:smoke": "tsx scripts/smoke-test.ts",
     "postinstall": "echo \"Setup complete\""
   },
   "dependencies": {
@@ -66,6 +67,7 @@
     "prettier": "^3.3.3",
     "supabase": "^1.200.3",
     "tailwindcss": "^3.4.12",
+    "tsx": "^4.20.6",
     "typescript": "^5.6.2"
   },
   "engines": {

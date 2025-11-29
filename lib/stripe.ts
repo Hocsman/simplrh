@@ -1,4 +1,12 @@
 import Stripe from 'stripe'
+import { logger } from './logger'
+import {
+  handleCheckoutCompleted,
+  handleInvoicePaymentSucceeded,
+  handleInvoicePaymentFailed,
+  handleSubscriptionUpdated,
+  handleSubscriptionDeleted
+} from '@/domains/billing/stripe-webhooks'
 
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2024-06-20'
@@ -134,39 +142,44 @@ export async function createCustomerPortalSession(customerId: string, returnUrl?
 }
 
 export async function handleWebhookEvent(event: Stripe.Event) {
-  switch (event.type) {
-    case 'checkout.session.completed':
-      const session = event.data.object as Stripe.Checkout.Session
-      console.log('Checkout session completed:', session.id)
-      // TODO: Update organization billing plan in database
-      break
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed':
+        const session = event.data.object as Stripe.Checkout.Session
+        logger.info('Processing checkout.session.completed', { session: session.id })
+        await handleCheckoutCompleted(session)
+        break
 
-    case 'invoice.payment_succeeded':
-      const invoice = event.data.object as Stripe.Invoice
-      console.log('Invoice payment succeeded:', invoice.id)
-      // TODO: Update invoice status in database
-      break
+      case 'invoice.payment_succeeded':
+        const invoice = event.data.object as Stripe.Invoice
+        logger.info('Processing invoice.payment_succeeded', { invoice: invoice.id })
+        await handleInvoicePaymentSucceeded(invoice)
+        break
 
-    case 'invoice.payment_failed':
-      const failedInvoice = event.data.object as Stripe.Invoice
-      console.log('Invoice payment failed:', failedInvoice.id)
-      // TODO: Handle failed payment
-      break
+      case 'invoice.payment_failed':
+        const failedInvoice = event.data.object as Stripe.Invoice
+        logger.warn('Processing invoice.payment_failed', { invoice: failedInvoice.id })
+        await handleInvoicePaymentFailed(failedInvoice)
+        break
 
-    case 'customer.subscription.updated':
-      const subscription = event.data.object as Stripe.Subscription
-      console.log('Subscription updated:', subscription.id)
-      // TODO: Update subscription details
-      break
+      case 'customer.subscription.updated':
+        const subscription = event.data.object as Stripe.Subscription
+        logger.info('Processing customer.subscription.updated', { subscription: subscription.id })
+        await handleSubscriptionUpdated(subscription)
+        break
 
-    case 'customer.subscription.deleted':
-      const deletedSubscription = event.data.object as Stripe.Subscription
-      console.log('Subscription canceled:', deletedSubscription.id)
-      // TODO: Handle subscription cancellation
-      break
+      case 'customer.subscription.deleted':
+        const deletedSubscription = event.data.object as Stripe.Subscription
+        logger.warn('Processing customer.subscription.deleted', { subscription: deletedSubscription.id })
+        await handleSubscriptionDeleted(deletedSubscription)
+        break
 
-    default:
-      console.log(`Unhandled event type: ${event.type}`)
+      default:
+        logger.debug(`Unhandled Stripe event type: ${event.type}`)
+    }
+  } catch (error) {
+    logger.error('Error handling Stripe webhook event', error, { eventType: event.type })
+    throw error
   }
 }
 
@@ -176,15 +189,3 @@ export function formatPrice(amount: number, currency = 'EUR'): string {
     currency
   }).format(amount)
 }
-
-
-
-
-
-
-
-
-
-
-
-
