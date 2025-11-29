@@ -31,7 +31,7 @@ export async function generatePayrollExport(
   format: 'SilaeCSV' | 'PayFitCSV',
   actorId?: string
 ): Promise<{ export: PayrollExport; csvContent: string }> {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -110,7 +110,7 @@ export async function updatePayrollExportFilePath(
   exportId: string,
   filePath: string
 ): Promise<void> {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -222,7 +222,7 @@ function generatePayFitCSV(employees: any[]): string {
 }
 
 export async function getPayrollExports(orgId: string) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

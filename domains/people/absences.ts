@@ -31,7 +31,7 @@ export async function createAbsence(
   data: CreateAbsenceData, 
   actorId?: string
 ): Promise<Absence> {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -73,7 +73,7 @@ export async function createAbsence(
 }
 
 export async function getAbsences(orgId: string, startDate?: string, endDate?: string) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -108,7 +108,7 @@ export async function getAbsences(orgId: string, startDate?: string, endDate?: s
 }
 
 export async function getAbsencesByEmployee(orgId: string, employeeId: string) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -136,7 +136,7 @@ export async function getAbsencesByEmployee(orgId: string, employeeId: string) {
 }
 
 export async function deleteAbsence(absenceId: string, orgId: string, actorId?: string) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,

@@ -12,7 +12,7 @@ export interface DashboardStats {
 }
 
 export async function getDashboardStats(orgId: string): Promise<DashboardStats> {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -101,7 +101,7 @@ export async function getDashboardStats(orgId: string): Promise<DashboardStats> 
 }
 
 export async function getRecentInvoices(orgId: string, limit = 5) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -140,7 +140,7 @@ export async function getRecentInvoices(orgId: string, limit = 5) {
 }
 
 export async function getOverdueInvoices(orgId: string, limit = 5) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -183,7 +183,7 @@ export async function getOverdueInvoices(orgId: string, limit = 5) {
 }
 
 export async function getPendingLeaveRequests(orgId: string, limit = 5) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -223,7 +223,7 @@ export async function getPendingLeaveRequests(orgId: string, limit = 5) {
 }
 
 export async function getRecentDocuments(orgId: string, limit = 5) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

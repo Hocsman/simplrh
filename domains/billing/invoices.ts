@@ -60,7 +60,7 @@ export const createInvoiceSchema = z.object({
 export type CreateInvoiceData = z.infer<typeof createInvoiceSchema>
 
 export async function createInvoice(orgId: string, data: CreateInvoiceData, actorId?: string) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -133,7 +133,7 @@ export async function createInvoice(orgId: string, data: CreateInvoiceData, acto
 }
 
 export async function getInvoices(orgId: string, limit = 50) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -167,7 +167,7 @@ export async function updateInvoiceStatus(
   orgId: string,
   actorId?: string
 ) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -202,7 +202,7 @@ export async function updateInvoiceStatus(
 }
 
 export async function getOverdueInvoices(orgId: string) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

@@ -32,7 +32,7 @@ export const createCustomerSchema = z.object({
 export type CreateCustomerData = z.infer<typeof createCustomerSchema>
 
 export async function createCustomer(orgId: string, data: CreateCustomerData, actorId?: string) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -70,7 +70,7 @@ export async function createCustomer(orgId: string, data: CreateCustomerData, ac
 }
 
 export async function getCustomers(orgId: string) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -94,7 +94,7 @@ export async function getCustomers(orgId: string) {
 }
 
 export async function getCustomer(customerId: string, orgId: string) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

@@ -10,7 +10,7 @@ export const createOrganizationSchema = z.object({
 export type CreateOrganizationData = z.infer<typeof createOrganizationSchema>
 
 export async function createOrganization(data: CreateOrganizationData, ownerId: string) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -60,7 +60,7 @@ export async function updateOrganizationModules(
   orgId: string, 
   modules: { billing: boolean; people: boolean; docs: boolean }
 ) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
