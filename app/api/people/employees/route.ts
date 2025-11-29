@@ -1,105 +1,79 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
+import { withErrorHandling, getAuthContext, ApiSuccess, ApiError } from '@/lib/api-utils'
+import { logger } from '@/lib/logger'
+import { createEmployeeSchema } from '@/domains/people/schemas'
 
 // GET - Récupérer tous les employés de l'organisation
 export async function GET() {
-  try {
-    const supabase = await createClient()
-    
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-    }
+  return withErrorHandling(async () => {
+    const { error, supabase, orgId } = await getAuthContext()
+    if (error) return error
 
-    const { data: member } = await supabase
-      .from('members')
-      .select('org_id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (!member) {
-      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 })
-    }
-
-    const { data: employees, error } = await supabase
+    const { data: employees, error: fetchError } = await supabase
       .from('employees')
       .select('*')
-      .eq('org_id', member.org_id)
+      .eq('org_id', orgId)
       .order('created_at', { ascending: false })
 
-    if (error) {
-      console.error('Error fetching employees:', error)
-      return NextResponse.json({ error: 'Erreur lors de la récupération des employés' }, { status: 500 })
+    if (fetchError) {
+      logger.error('Error fetching employees', fetchError)
+      return ApiError.internal('Erreur lors de la récupération des employés')
     }
 
-    console.log(`✅ Found ${employees?.length || 0} employees`)
-    return NextResponse.json({ employees: employees || [] })
-  } catch (error: any) {
-    console.error('Error in employees GET:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
+    logger.info(`Found ${employees?.length || 0} employees for org ${orgId}`)
+    return ApiSuccess.ok({ employees: employees || [] })
+  })
 }
 
 // POST - Créer un nouvel employé
 export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-    
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-    }
-
-    const { data: member } = await supabase
-      .from('members')
-      .select('org_id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (!member) {
-      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 })
-    }
+  return withErrorHandling(async () => {
+    const { error, supabase, orgId } = await getAuthContext()
+    if (error) return error
 
     const body = await request.json()
-    console.log('📝 Creating employee:', body)
 
-    const { full_name, email, position, hire_date, salary, contract_type, status } = body
-
-    if (!full_name) {
-      return NextResponse.json({ error: 'Le nom complet est requis' }, { status: 400 })
+    // Validate input with Zod
+    const validationResult = createEmployeeSchema.safeParse(body)
+    if (!validationResult.success) {
+      logger.warn('Invalid employee data', { errors: validationResult.error.errors })
+      return ApiError.badRequest(
+        validationResult.error.errors[0]?.message || 'Données invalides'
+      )
     }
 
-    const employeeData: any = {
-      org_id: member.org_id,
-      full_name: full_name.trim(),
-      email: (email && typeof email === 'string' && email.trim().length > 0) ? email.trim() : null,
-      position: (position && typeof position === 'string' && position.trim().length > 0) ? position.trim() : null,
-      hire_date: (hire_date && typeof hire_date === 'string' && hire_date.trim().length > 0) ? hire_date : null,
-      salary: (salary && salary !== '' && salary !== null && salary !== undefined) ? Number(salary) : null,
-      contract_type: (contract_type && typeof contract_type === 'string') ? contract_type : 'CDI',
-      status: (status && typeof status === 'string') ? status : 'active'
+    const validatedData = validationResult.data
+
+    // Prepare employee data
+    const employeeData = {
+      org_id: orgId,
+      full_name: validatedData.full_name.trim(),
+      email: validatedData.email && validatedData.email.trim().length > 0
+        ? validatedData.email.trim()
+        : null,
+      phone: validatedData.phone || null,
+      position: validatedData.position || null,
+      department: validatedData.department || null,
+      hire_date: validatedData.hire_date || null,
+      salary: validatedData.salary || null,
+      status: validatedData.status
     }
 
-    console.log('🔍 Final employeeData:', JSON.stringify(employeeData))
+    logger.debug('Creating employee', { data: employeeData })
 
-    const { data: employee, error } = await supabase
+    // Create employee
+    const { data: employee, error: createError } = await supabase
       .from('employees')
       .insert(employeeData)
       .select()
       .single()
 
-    if (error) {
-      console.error('❌ Employee creation error:', error)
-      return NextResponse.json({ 
-        error: 'Erreur lors de la création de l\'employé',
-        details: error.message 
-      }, { status: 500 })
+    if (createError) {
+      logger.error('Error creating employee', createError)
+      return ApiError.internal('Erreur lors de la création de l\'employé')
     }
 
-    console.log('✅ Employee created:', employee.id)
-    return NextResponse.json({ employee }, { status: 201 })
-  } catch (error: any) {
-    console.error('❌ Error in employees POST:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
+    logger.success(`Employee created: ${employee.id}`)
+    return ApiSuccess.created({ employee })
+  })
 }

@@ -1,47 +1,33 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { updateEmployeeSchema } from '@/domains/people/employees'
+import { NextRequest } from 'next/server'
+import { withErrorHandling, getAuthContext, ApiSuccess, ApiError } from '@/lib/api-utils'
+import { logger } from '@/lib/logger'
+import { updateEmployeeSchema } from '@/domains/people/schemas'
 
 // GET - Récupérer un employé spécifique
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const { id } = await params
-    const supabase = await createClient()
+  const { id } = await params
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-    }
+  return withErrorHandling(async () => {
+    const { error, supabase, orgId } = await getAuthContext()
+    if (error) return error
 
-    const { data: member } = await supabase
-      .from('members')
-      .select('org_id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (!member) {
-      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 })
-    }
-
-    const { data: employee, error } = await supabase
+    const { data: employee, error: fetchError } = await supabase
       .from('employees')
       .select('*')
       .eq('id', id)
-      .eq('org_id', member.org_id)
+      .eq('org_id', orgId)
       .single()
 
-    if (error) {
-      return NextResponse.json({ error: 'Employé non trouvé' }, { status: 404 })
+    if (fetchError || !employee) {
+      logger.warn(`Employee not found: ${id}`, { orgId })
+      return ApiError.notFound('Employé non trouvé')
     }
 
-    return NextResponse.json({ employee })
-  } catch (error: any) {
-    console.error('Error in employee GET:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
+    return ApiSuccess.ok({ employee })
+  })
 }
 
 // PUT - Mettre à jour un employé
@@ -49,68 +35,55 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const { id } = await params
-    const supabase = await createClient()
+  const { id } = await params
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-    }
-
-    const { data: member } = await supabase
-      .from('members')
-      .select('org_id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (!member) {
-      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 })
-    }
+  return withErrorHandling(async () => {
+    const { error, supabase, orgId } = await getAuthContext()
+    if (error) return error
 
     const body = await request.json()
 
-    // Validate using updateEmployeeSchema
-    const validation = updateEmployeeSchema.safeParse(body)
-    if (!validation.success) {
-      return NextResponse.json(
-        { error: 'Données invalides', details: validation.error.errors },
-        { status: 400 }
+    // Validate input with Zod
+    const validationResult = updateEmployeeSchema.safeParse(body)
+    if (!validationResult.success) {
+      logger.warn('Invalid employee update data', { errors: validationResult.error.errors })
+      return ApiError.badRequest(
+        validationResult.error.errors[0]?.message || 'Données invalides'
       )
     }
 
+    const validatedData = validationResult.data
+
+    // Build update object (only include provided fields)
     const updateData: any = {}
 
-    // Only include fields that were provided
-    if (validation.data.full_name !== undefined) updateData.full_name = validation.data.full_name
-    if (validation.data.email !== undefined) updateData.email = validation.data.email || null
-    if (validation.data.position !== undefined) updateData.position = validation.data.position || null
-    if (validation.data.hire_date !== undefined) updateData.hire_date = validation.data.hire_date || null
-    if (validation.data.salary !== undefined) updateData.salary = validation.data.salary || null
-    if (validation.data.contract_type !== undefined) updateData.contract_type = validation.data.contract_type
-    if (validation.data.status !== undefined) updateData.status = validation.data.status
+    if (validatedData.full_name !== undefined) updateData.full_name = validatedData.full_name
+    if (validatedData.email !== undefined) updateData.email = validatedData.email || null
+    if (validatedData.phone !== undefined) updateData.phone = validatedData.phone || null
+    if (validatedData.position !== undefined) updateData.position = validatedData.position || null
+    if (validatedData.department !== undefined) updateData.department = validatedData.department || null
+    if (validatedData.hire_date !== undefined) updateData.hire_date = validatedData.hire_date || null
+    if (validatedData.salary !== undefined) updateData.salary = validatedData.salary || null
+    if (validatedData.status !== undefined) updateData.status = validatedData.status
 
-    const { data: employee, error } = await supabase
+    logger.debug(`Updating employee ${id}`, { data: updateData })
+
+    const { data: employee, error: updateError } = await supabase
       .from('employees')
       .update(updateData)
       .eq('id', id)
-      .eq('org_id', member.org_id)
+      .eq('org_id', orgId)
       .select()
       .single()
 
-    if (error) {
-      console.error('Error updating employee:', error)
-      return NextResponse.json(
-        { error: 'Erreur lors de la mise à jour', details: error.message },
-        { status: 500 }
-      )
+    if (updateError) {
+      logger.error('Error updating employee', updateError)
+      return ApiError.internal('Erreur lors de la mise à jour')
     }
 
-    return NextResponse.json({ employee })
-  } catch (error: any) {
-    console.error('Error in employee PUT:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
+    logger.success(`Employee updated: ${id}`)
+    return ApiSuccess.ok({ employee })
+  })
 }
 
 // DELETE - Supprimer un employé
@@ -118,54 +91,37 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const { id } = await params
-    const supabase = await createClient()
+  const { id } = await params
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-    }
+  return withErrorHandling(async () => {
+    const { error, supabase, orgId } = await getAuthContext()
+    if (error) return error
 
-    const { data: member } = await supabase
-      .from('members')
-      .select('org_id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (!member) {
-      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 })
-    }
-
-    // First verify the employee belongs to this org
+    // Verify employee exists and belongs to organization
     const { data: employee, error: fetchError } = await supabase
       .from('employees')
       .select('id')
       .eq('id', id)
-      .eq('org_id', member.org_id)
+      .eq('org_id', orgId)
       .single()
 
     if (fetchError || !employee) {
-      return NextResponse.json({ error: 'Employé non trouvé' }, { status: 404 })
+      logger.warn(`Employee not found for deletion: ${id}`, { orgId })
+      return ApiError.notFound('Employé non trouvé')
     }
 
     const { error: deleteError } = await supabase
       .from('employees')
       .delete()
       .eq('id', id)
-      .eq('org_id', member.org_id)
+      .eq('org_id', orgId)
 
     if (deleteError) {
-      console.error('Error deleting employee:', deleteError)
-      return NextResponse.json(
-        { error: 'Erreur lors de la suppression', details: deleteError.message },
-        { status: 500 }
-      )
+      logger.error('Error deleting employee', deleteError)
+      return ApiError.internal('Erreur lors de la suppression')
     }
 
-    return NextResponse.json({ message: 'Employé supprimé avec succès' })
-  } catch (error: any) {
-    console.error('Error in employee DELETE:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
+    logger.success(`Employee deleted: ${id}`)
+    return ApiSuccess.ok({ message: 'Employé supprimé avec succès' })
+  })
 }

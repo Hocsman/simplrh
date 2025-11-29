@@ -1,111 +1,95 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
+import { withErrorHandling, getAuthContext, ApiSuccess, ApiError } from '@/lib/api-utils'
+import { logger } from '@/lib/logger'
+import { createLeaveRequestSchema } from '@/domains/people/schemas'
 
 // GET - Récupérer toutes les demandes de congés
 export async function GET() {
-  try {
-    const supabase = await createClient()
-    
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-    }
+  return withErrorHandling(async () => {
+    const { error, supabase, orgId } = await getAuthContext()
+    if (error) return error
 
-    const { data: member } = await supabase
-      .from('members')
-      .select('org_id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (!member) {
-      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 })
-    }
-
-    const { data: leaveRequests, error } = await supabase
+    const { data: leaveRequests, error: fetchError } = await supabase
       .from('leave_requests')
       .select(`
         *,
         employee:employees(id, full_name, email)
       `)
-      .eq('org_id', member.org_id)
+      .eq('org_id', orgId)
       .order('created_at', { ascending: false })
 
-    if (error) {
-      console.error('Error fetching leave requests:', error)
-      return NextResponse.json({ error: 'Erreur lors de la récupération des demandes' }, { status: 500 })
+    if (fetchError) {
+      logger.error('Error fetching leave requests', fetchError)
+      return ApiError.internal('Erreur lors de la récupération des demandes')
     }
 
-    console.log(`✅ Found ${leaveRequests?.length || 0} leave requests`)
-    return NextResponse.json({ leaveRequests: leaveRequests || [] })
-  } catch (error: any) {
-    console.error('Error in leave requests GET:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
+    logger.info(`Found ${leaveRequests?.length || 0} leave requests for org ${orgId}`)
+    return ApiSuccess.ok({ leaveRequests: leaveRequests || [] })
+  })
 }
 
 // POST - Créer une nouvelle demande de congé
 export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-    
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-    }
-
-    const { data: member } = await supabase
-      .from('members')
-      .select('org_id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (!member) {
-      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 })
-    }
+  return withErrorHandling(async () => {
+    const { error, supabase, orgId } = await getAuthContext()
+    if (error) return error
 
     const body = await request.json()
-    console.log('📝 Creating leave request:', body)
-    
-    const { employee_id, type, start_date, end_date, comment } = body
-    
-    if (!employee_id || !type || !start_date || !end_date) {
-      return NextResponse.json({ error: 'Données manquantes' }, { status: 400 })
+
+    // Validate input with Zod
+    const validationResult = createLeaveRequestSchema.safeParse(body)
+    if (!validationResult.success) {
+      logger.warn('Invalid leave request data', { errors: validationResult.error.errors })
+      return ApiError.badRequest(
+        validationResult.error.errors[0]?.message || 'Données invalides'
+      )
+    }
+
+    const validatedData = validationResult.data
+
+    // Verify employee belongs to organization
+    const { data: employee, error: employeeError } = await supabase
+      .from('employees')
+      .select('id')
+      .eq('id', validatedData.employee_id)
+      .eq('org_id', orgId)
+      .single()
+
+    if (employeeError || !employee) {
+      logger.warn('Employee not found or unauthorized', { employee_id: validatedData.employee_id })
+      return ApiError.notFound('Employé non trouvé')
     }
 
     // Calculate number of days
-    const start = new Date(start_date)
-    const end = new Date(end_date)
+    const start = new Date(validatedData.start_date)
+    const end = new Date(validatedData.end_date)
     const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
 
     const leaveRequestData = {
-      org_id: member.org_id,
-      employee_id,
-      type,
-      start_date,
-      end_date,
+      org_id: orgId,
+      employee_id: validatedData.employee_id,
+      type: validatedData.type,
+      start_date: validatedData.start_date,
+      end_date: validatedData.end_date,
       days,
-      comment: comment || null,
+      comment: validatedData.comment || null,
       status: 'pending'
     }
 
-    const { data: leaveRequest, error } = await supabase
+    logger.debug('Creating leave request', { data: leaveRequestData })
+
+    const { data: leaveRequest, error: createError } = await supabase
       .from('leave_requests')
       .insert(leaveRequestData)
       .select()
       .single()
 
-    if (error) {
-      console.error('❌ Leave request creation error:', error)
-      return NextResponse.json({ 
-        error: 'Erreur lors de la création de la demande',
-        details: error.message 
-      }, { status: 500 })
+    if (createError) {
+      logger.error('Error creating leave request', createError)
+      return ApiError.internal('Erreur lors de la création de la demande')
     }
 
-    console.log('✅ Leave request created:', leaveRequest.id)
-    return NextResponse.json({ leaveRequest }, { status: 201 })
-  } catch (error: any) {
-    console.error('❌ Error in leave requests POST:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
+    logger.success(`Leave request created: ${leaveRequest.id} (${days} days)`)
+    return ApiSuccess.created({ leaveRequest })
+  })
 }

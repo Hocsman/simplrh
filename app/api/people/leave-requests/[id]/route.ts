@@ -1,66 +1,61 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
+import { withErrorHandling, getAuthContext, ApiSuccess, ApiError } from '@/lib/api-utils'
+import { logger } from '@/lib/logger'
+import { updateLeaveRequestStatusSchema } from '@/domains/people/schemas'
 
 // PATCH - Approuver ou rejeter une demande de congé
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  try {
-    const supabase = await createClient()
-    
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-    }
-
-    const { data: member } = await supabase
-      .from('members')
-      .select('org_id, role')
-      .eq('user_id', user.id)
-      .single()
-
-    if (!member) {
-      return NextResponse.json({ error: 'Organisation non trouvée' }, { status: 404 })
-    }
+  return withErrorHandling(async () => {
+    const { error, supabase, orgId, role } = await getAuthContext()
+    if (error) return error
 
     // Only managers and above can approve/reject
-    if (!['owner', 'admin', 'manager'].includes(member.role)) {
-      return NextResponse.json({ error: 'Permission refusée' }, { status: 403 })
+    if (!role || !['owner', 'admin', 'manager'].includes(role)) {
+      logger.warn('Permission denied for leave request approval', { role })
+      return ApiError.forbidden('Permission refusée. Seuls les managers peuvent approuver/rejeter les demandes.')
     }
 
     const body = await request.json()
-    const { status } = body
-    
-    if (!['approved', 'rejected'].includes(status)) {
-      return NextResponse.json({ error: 'Statut invalide' }, { status: 400 })
+
+    // Validate input with Zod
+    const validationResult = updateLeaveRequestStatusSchema.safeParse(body)
+    if (!validationResult.success) {
+      logger.warn('Invalid leave request status data', { errors: validationResult.error.errors })
+      return ApiError.badRequest(
+        validationResult.error.errors[0]?.message || 'Données invalides'
+      )
     }
 
-    console.log(`📝 Updating leave request ${params.id} to ${status}`)
+    const validatedData = validationResult.data
 
-    const { data: leaveRequest, error } = await supabase
+    logger.debug(`Updating leave request ${params.id} to ${validatedData.status}`)
+
+    const updateData: any = {
+      status: validatedData.status,
+      updated_at: new Date().toISOString()
+    }
+
+    if (validatedData.comment) {
+      updateData.comment = validatedData.comment
+    }
+
+    const { data: leaveRequest, error: updateError } = await supabase
       .from('leave_requests')
-      .update({ 
-        status,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', params.id)
-      .eq('org_id', member.org_id)
+      .eq('org_id', orgId)
       .select()
       .single()
 
-    if (error) {
-      console.error('❌ Leave request update error:', error)
-      return NextResponse.json({ 
-        error: 'Erreur lors de la mise à jour',
-        details: error.message 
-      }, { status: 500 })
+    if (updateError || !leaveRequest) {
+      logger.error('Error updating leave request', updateError)
+      return ApiError.internal('Erreur lors de la mise à jour de la demande')
     }
 
-    console.log(`✅ Leave request ${params.id} ${status}`)
-    return NextResponse.json({ leaveRequest })
-  } catch (error: any) {
-    console.error('❌ Error in leave request PATCH:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
+    logger.success(`Leave request ${params.id} ${validatedData.status}`)
+    return ApiSuccess.ok({ leaveRequest })
+  })
 }
