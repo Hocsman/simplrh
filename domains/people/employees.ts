@@ -43,7 +43,7 @@ export type CreateEmployeeData = z.infer<typeof createEmployeeSchema>
 export type UpdateEmployeeData = z.infer<typeof updateEmployeeSchema>
 
 export async function createEmployee(orgId: string, data: CreateEmployeeData, actorId?: string) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -86,7 +86,7 @@ export async function createEmployee(orgId: string, data: CreateEmployeeData, ac
 
 export async function getEmployees(orgId: string) {
   try {
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -115,7 +115,7 @@ export async function getEmployees(orgId: string) {
 }
 
 export async function getEmployee(employeeId: string, orgId: string) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -140,7 +140,7 @@ export async function getEmployee(employeeId: string, orgId: string) {
 }
 
 export async function updateEmployee(employeeId: string, orgId: string, data: UpdateEmployeeData, actorId?: string) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -185,7 +185,7 @@ export async function updateEmployee(employeeId: string, orgId: string, data: Up
 }
 
 export async function deleteEmployee(employeeId: string, orgId: string, actorId?: string) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -216,7 +216,7 @@ export async function deleteEmployee(employeeId: string, orgId: string, actorId?
 }
 
 export async function searchEmployees(orgId: string, searchTerm: string) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
